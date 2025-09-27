@@ -1,0 +1,75 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"idle": {
+			"loop": true,
+			"animation_length": 3,
+			"bones": {
+				"Tenna1": {
+					"rotation": {
+						"vector": [-20, 0, 0]
+					}
+				},
+				"Tenna2": {
+					"rotation": {
+						"vector": [-20, 0, 0]
+					}
+				},
+				"eyes": {
+					"position": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"2.4167": {
+							"vector": [0, 0, 0]
+						}
+					},
+					"scale": {
+						"0.0": {
+							"vector": [1, 1, 1]
+						},
+						"2.4167": {
+							"vector": [1, 1, 1]
+						}
+					}
+				},
+				"eye1": {
+					"scale": {
+						"vector": [1, 1, 1]
+					}
+				},
+				"Leg1": {
+					"rotation": {
+						"vector": [0, 5, 0]
+					}
+				},
+				"leg2": {
+					"rotation": {
+						"vector": [0, -5, 0]
+					}
+				},
+				"Arm1": {
+					"rotation": {
+						"vector": [0, 0, 0]
+					}
+				},
+				"Arm2": {
+					"rotation": {
+						"0.0": {
+							"post": {
+								"vector": [0, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						}
+					}
+				},
+				"base": {
+					"position": {
+						"vector": [0, 0, 0]
+					}
+				}
+			}
+		}
+	},
+	"geckolib_format_version": 2
+}
