@@ -1,26 +1,26 @@
 package com.quogle.lavarise.entity.custom;
 
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.*;
 import software.bernie.geckolib.animation.AnimationState;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import software.bernie.geckolib.animatable.GeoAnimatable;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.*;
-import software.bernie.geckolib.loading.json.raw.Bone;
 
 public class DacoEntity extends Mob implements GeoEntity {
+
+    public float prevHeadPitch = 0f;
+    public float prevHeadYaw = 0f;
 
     private final AnimatableManager<DacoEntity> animatableManager = new AnimatableManager<>(this);
 
     public DacoEntity(EntityType<DacoEntity> entityType, Level level) {
         super(entityType, level);
         this.setPersistenceRequired();
+
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -52,10 +52,6 @@ public class DacoEntity extends Mob implements GeoEntity {
     @Override
     public AnimatableInstanceCache getAnimatableInstanceCache() {
         return cache;
-    }
-
-    public AnimatableManager<DacoEntity> getAnimatableManager() {
-        return animatableManager;
     }
 
 }

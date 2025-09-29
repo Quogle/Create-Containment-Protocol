@@ -87,7 +87,7 @@
 					]
 				},
 				{
-					"name": "Arm1",
+					"name": "left_arm",
 					"parent": "base",
 					"pivot": [-2.25, 4.5, 0],
 					"cubes": [
@@ -95,7 +95,7 @@
 					]
 				},
 				{
-					"name": "Arm2",
+					"name": "right_arm",
 					"parent": "base",
 					"pivot": [2.25, 4.5, 0],
 					"cubes": [

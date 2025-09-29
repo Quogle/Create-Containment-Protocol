@@ -16,7 +16,10 @@ public class ModEntities {
 
     public static final Supplier<EntityType<DacoEntity>> DACO =
             ENTITY_TYPES.register("daco", () -> EntityType.Builder.of(DacoEntity::new, MobCategory.CREATURE)
-                    .sized(0.5f, 0.75f).build(""));
+                    .sized(0.5f, 0.75f)
+                    .eyeHeight(0.5f)
+                    .build(""));
+
 
 
     public static void register(IEventBus eventBus) {
