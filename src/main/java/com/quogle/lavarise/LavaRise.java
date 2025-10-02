@@ -3,9 +3,7 @@ package com.quogle.lavarise;
 import com.quogle.lavarise.entity.ModEntities;
 import com.quogle.lavarise.entity.client.DacoRenderer;
 import com.quogle.lavarise.entity.custom.DacoEntity;
-import com.quogle.lavarise.event.ModEvents;
 import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import org.slf4j.Logger;
@@ -76,6 +74,9 @@ public class LavaRise {
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::onClientSetup);
         modEventBus.addListener(this::onEntityAttributeCreation);
+
+        NeoForge.EVENT_BUS.register(StartRiseCommand.class); // Register commands
+        NeoForge.EVENT_BUS.register(LavaRisingHandler.class); // Register tick handler
 
         ModEntities.register(modEventBus);
         // Register the Deferred Register to the mod event bus so blocks get registered
