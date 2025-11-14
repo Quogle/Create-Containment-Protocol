@@ -42,18 +42,18 @@ public class DacoModel extends GeoModel<DacoEntity> {
 
             float phase = ageInTicks * swingSpeedZ;
             // Sine-based swinging
-            float leftArmRotX = (float) Math.sin(ageInTicks * swingSpeedX) * swingAmplitudeX;
-            float rightArmRotX = (float) Math.sin(ageInTicks * swingSpeedX + Math.PI) * swingAmplitudeX;
+            float rightArmRotX = (float) Math.sin(ageInTicks * swingSpeedX) * swingAmplitudeX;
+            float leftArmRotX = (float) Math.sin(ageInTicks * swingSpeedX + Math.PI) * swingAmplitudeX;
 
-            float leftArmRotZ = (float) ((Math.cos(phase) + 1.0) / 2.0) * swingAmplitudeZ;
             float rightArmRotZ = (float) ((Math.cos(phase) + 1.0) / 2.0) * swingAmplitudeZ;
+            float leftArmRotZ = (float) ((Math.cos(phase) + 1.0) / 2.0) * swingAmplitudeZ;
 
             // Apply rotation to arms (around X axis for up/down swinging)
-            leftArm.setRotX(leftArmRotX);
             rightArm.setRotX(rightArmRotX);
+            leftArm.setRotX(leftArmRotX);
 
-            leftArm.setRotZ(leftArmRotZ);
-            rightArm.setRotZ(-rightArmRotZ);
+            rightArm.setRotZ(rightArmRotZ);
+            leftArm.setRotZ(-leftArmRotZ);
         }
 
         GeoBone head = getAnimationProcessor().getBone("head");
@@ -95,7 +95,7 @@ public class DacoModel extends GeoModel<DacoEntity> {
         targetYaw = clamp(targetYaw, -75f, 75f);
 
         //Interpolation Value
-        float lerpFactor = 0.1f;
+        float lerpFactor = 0.09f;
         entity.prevHeadPitch += (targetPitch - entity.prevHeadPitch) * lerpFactor;
         entity.prevHeadYaw += (targetYaw - entity.prevHeadYaw) * lerpFactor;
 

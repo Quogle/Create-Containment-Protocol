@@ -1,7 +1,8 @@
-package com.quogle.lavarise;
+package com.quogle.lavarise.commands;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
+import com.quogle.lavarise.LavaRisingHandler;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
