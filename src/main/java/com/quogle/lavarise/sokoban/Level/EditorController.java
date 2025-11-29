@@ -10,6 +10,7 @@ public class EditorController {
     private EditorTab activeTab = EditorTab.TILE; // default
     private EditorCursor editorCursor;
     private TileType selectedTileType = TileType.FLOOR;
+    private Property selectedProperty = Property.FIRE;
     private EntityType selectedEntityType = EntityType.PLAYER; // default
     private Direction selectedTileDirection = Direction.RIGHT;
     private Direction selectedEntityDirection = Direction.DOWN;// default for preview
@@ -46,6 +47,9 @@ public class EditorController {
     public EntityType getSelectedEntityType() {
         return selectedEntityType;
     }
+    public Property getSelectedProperty() {
+        return selectedProperty;
+    }
     public Direction getSelectedEntityDirection() {
         return selectedEntityDirection;
     }
@@ -56,8 +60,11 @@ public class EditorController {
                 case 1 -> TileType.FLOOR;
                 case 2 -> TileType.WALL;
                 case 3 -> TileType.VOID;
-                case 4 -> TileType.IMPRINT;
-                case 5 -> TileType.ARROW;
+                case 4 -> TileType.EXIT;
+                case 5 -> TileType.IMPRINT;
+                case 6 -> TileType.ARROW;
+                case 7 -> TileType.CRACKED;
+
                 default -> selectedTileType;
             };
             case ENTITY -> selectedEntityType = switch (number) {
@@ -67,9 +74,13 @@ public class EditorController {
                 default -> selectedEntityType;
             };
 
-            case PROPERTY -> {
-                // TODO: set selected property
-            }
+            case PROPERTY -> selectedProperty = switch (number) {
+                case 1 -> Property.FIRE;
+                case 2 -> Property.ICE;
+                case 3 -> Property.ROTATE;
+                case 4 -> Property.WATER;
+                default -> selectedProperty;
+            };
             case MISC -> {
                 // TODO: set misc selections
             }
@@ -80,7 +91,11 @@ public class EditorController {
         if (activeTab == EditorTab.TILE) {
             editorCursor.placeTile(selectedTileType, selectedTileDirection);
         } else if (activeTab == EditorTab.ENTITY) {
+            editorCursor.clearEntities();
             editorCursor.placeEntity(selectedEntityType, selectedEntityDirection);
+        } else if (activeTab == EditorTab.PROPERTY) {
+            editorCursor.clearProperties();
+            editorCursor.addProperty(selectedProperty);
         }
         // TODO: handle other tabs
     }
@@ -111,6 +126,10 @@ public class EditorController {
             case GLFW.GLFW_KEY_E -> selectEditorItem(3);
             case GLFW.GLFW_KEY_R -> selectEditorItem(4);
             case GLFW.GLFW_KEY_T -> selectEditorItem(5);
+            case GLFW.GLFW_KEY_A -> selectEditorItem(6);
+            case GLFW.GLFW_KEY_S -> selectEditorItem(7);
+
+
 
             case GLFW.GLFW_KEY_Z -> placeSelectedItem();
             case GLFW.GLFW_KEY_X -> rotateSelected();
@@ -120,7 +139,7 @@ public class EditorController {
             case GLFW.GLFW_KEY_UP -> moveCursor(0, -1, isZHeld);
             case GLFW.GLFW_KEY_DOWN -> moveCursor(0, 1, isZHeld);
 
-            case GLFW.GLFW_KEY_S -> saveLevel("saved_level.json");
+            case GLFW.GLFW_KEY_K -> saveLevel("saved_level.json");
             case GLFW.GLFW_KEY_L -> loadedLevel = loadLevel("saved_level.json");
         }
         return loadedLevel;

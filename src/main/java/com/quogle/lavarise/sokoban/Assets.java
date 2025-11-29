@@ -10,11 +10,13 @@ public class Assets {
     // TILES
     public static final ResourceLocation WALL   = rl("textures/gui/sokoban/tiles/wall.png");
     public static final ResourceLocation FLOOR  = rl("textures/gui/sokoban/tiles/floor.png");
+    public static final ResourceLocation CRACKED  = rl("textures/gui/sokoban/tiles/cracked.png");
     public static final ResourceLocation VOID   = rl("textures/gui/sokoban/tiles/void.png");
     public static final ResourceLocation IMPRINT   = rl("textures/gui/sokoban/tiles/imprint.png");
     public static final ResourceLocation HP     = rl("textures/gui/sokoban/tiles/hp.png");
     public static final ResourceLocation BLANK  = rl("textures/gui/sokoban/tiles/blank.png");
     public static final ResourceLocation FIRE   = rl("textures/gui/sokoban/tiles/fire.png");
+    public static final ResourceLocation ROTATE   = rl("textures/gui/sokoban/tiles/rotate.png");
     public static final ResourceLocation ICE    = rl("textures/gui/sokoban/tiles/ice.png");
     public static final ResourceLocation WATER  = rl("textures/gui/sokoban/tiles/water.png");
     public static final ResourceLocation FL     = rl("textures/gui/sokoban/tiles/fl.png");
@@ -30,6 +32,7 @@ public class Assets {
     public static final ResourceLocation ARROW_UP2    = rl("textures/gui/sokoban/tiles/arrow_up2.png");
     public static final ResourceLocation ARROW_DOWN1  = rl("textures/gui/sokoban/tiles/arrow_down1.png");
     public static final ResourceLocation ARROW_DOWN2  = rl("textures/gui/sokoban/tiles/arrow_down2.png");
+    public static final ResourceLocation EXIT = rl("textures/gui/sokoban/tiles/exit.png");;
 
 
     // ENTITIES
@@ -42,6 +45,16 @@ public class Assets {
     public static final ResourceLocation SNAIL_RIGHT    = rl("textures/gui/sokoban/entity/snail_right1.png");
 
     public static final ResourceLocation CURSOR = rl("textures/gui/sokoban/entity/cursor_1.png");
+
+
+    //EDITOR
+    public static final ResourceLocation FIRE_PREV   = rl("textures/gui/sokoban/tiles/fire_prev.png");
+    public static final ResourceLocation ROTATE_PREV   = rl("textures/gui/sokoban/tiles/rotate_prev.png");
+    public static final ResourceLocation ICE_PREV    = rl("textures/gui/sokoban/tiles/ice_prev.png");
+    public static final ResourceLocation WATER_PREV  = rl("textures/gui/sokoban/tiles/water_prev.png");
+
+    //MISC
+    public static final ResourceLocation ROTATE_OVERLAY = rl("textures/gui/sokoban/tiles/rotate_overlay.png");
 
     private static ResourceLocation rl(String path) {
         return ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, path);

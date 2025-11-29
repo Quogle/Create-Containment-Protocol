@@ -11,18 +11,18 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.quogle.lavarise.sokoban.Direction;
 import net.minecraft.resources.ResourceLocation;
 
+import static com.quogle.lavarise.sokoban.TileType.VOID;
+
 public class Snail extends Entity implements Rotatable {
-    private final AnimationManager animManager;
-    private final StateMachine<SnailState> stateMachine;
     private Direction direction;
     private Property property;
-
+    Tile previousTile;
     //Constructor
-    public Snail(int x, int y, Direction dir, AnimationManager animManager, EntityType entityType) {
-        super(x, y, entityType);
-        this.stateMachine = new StateMachine<>(SnailState.SNAIL_LEFT);
-        this.animManager = animManager;
+    public Snail(int x, int y, Direction dir, AnimationManager animManager, EntityType entityType, Level level) {
+        super(x, y, entityType, animManager);
+        this.stateMachine = new StateMachine(SnailState.SNAIL_LEFT);
         this.direction = dir;
+        this.previousTile = level.getTile(getX(),getY());
         initAnimations();
         updateVisualDirection();
     }
@@ -56,6 +56,15 @@ public class Snail extends Entity implements Rotatable {
             level.getTile(getX(), getY()).setEntity(null); // clear current tile
             setPosition(newX, newY);
             targetTile.setEntity(this);
+
+            Tile newCurrentTile = level.getTile(getX(), getY());
+            if(newCurrentTile != previousTile && !previousTile.hasProperty(Property.ICE)) {
+                if(previousTile.getType() == TileType.CRACKED) {
+                    previousTile.setType(VOID);
+                }
+            }
+            previousTile = newCurrentTile;
+
         } else {
             turnAround();
         }
@@ -75,7 +84,7 @@ public class Snail extends Entity implements Rotatable {
 
     //apply Tile properties to snail
     private void applyTileEffects(Tile tile) {
-        if (tile.hasProperty(Property.FIRE)) {
+        if (tile.hasProperty(Property.ROTATE)) {
             this.direction = this.direction.nextClockwise();
             updateVisualDirection();
         }
@@ -118,33 +127,17 @@ public class Snail extends Entity implements Rotatable {
 
 
     private void initAnimations() {
-        animManager.add("idle_left", AnimationAssets.SNAIL_LEFT, 40, true);
-        animManager.add("idle_right", AnimationAssets.SNAIL_RIGHT, 40, true);
-        animManager.add("idle_up", AnimationAssets.SNAIL_UP, 40, true);
-        animManager.add("idle_down", AnimationAssets.SNAIL_DOWN, 40, true);
+        getAnimationManager().add("idle_left", AnimationAssets.SNAIL_LEFT, 40, true);
+        getAnimationManager().add("idle_right", AnimationAssets.SNAIL_RIGHT, 40, true);
+        getAnimationManager().add("idle_up", AnimationAssets.SNAIL_UP, 40, true);
+        getAnimationManager().add("idle_down", AnimationAssets.SNAIL_DOWN, 40, true);
     }
 
     public void render(GuiGraphics guiGraphics, int offsetX, int offsetY, int tileSize) {
         // Tick the snail's animation
-        animManager.tickAll();
-
-        // Get current state
-        SnailState state = getCurrentState();
-        Animation anim = animManager.get(state.getAnimKey());
-
-        // Handle nextState transitions
-        if (state.hasNextState() && anim.isFinished()) {
-            SnailState next = state.getNextState();
-            animManager.get(next.getAnimKey()).reset();
-            stateMachine.setState(next);
-        }
-
-        // Draw the snail
-        guiGraphics.blit(anim.getCurrentFrame(),
-                offsetX + getX() * tileSize,
-                offsetY + getY() * tileSize,
-                0, 0, tileSize, tileSize,
-                tileSize, tileSize);
+        getAnimationManager().tickAll();
+        Animation anim = getAnimationManager().get(getCurrentState().getAnimKey());
+        super.render(guiGraphics, offsetX, offsetY, tileSize, anim, getX(), getY());
     }
 
     private void updateVisualDirection() {
@@ -155,7 +148,12 @@ public class Snail extends Entity implements Rotatable {
             case RIGHT -> stateMachine.setState(SnailState.SNAIL_RIGHT);
         }
         // Reset animation so it starts from first frame
-        animManager.get(stateMachine.getState().getAnimKey()).reset();
+        getAnimationManager().get(stateMachine.getState().getAnimKey()).reset();
+    }
+
+    @Override
+    public String getCurrentAnimationKey() {
+        return stateMachine.getState().getAnimKey();
     }
 
     @Override
@@ -163,16 +161,15 @@ public class Snail extends Entity implements Rotatable {
 
     //Animation Getters
     public SnailState getCurrentState() {
-        return stateMachine.getState();
+        return (SnailState) stateMachine.getState();
     }
-    public AnimationManager getAnimationManager() {
-        return animManager;
-    }
-    public StateMachine<SnailState> getStateMachine() {
+    public StateMachine getStateMachine() {
         return stateMachine;
     }
     @Override
     public EntityType getType() {
         return EntityType.SNAIL;
     }
+    public Tile getPreviousTile() {return previousTile;}
+    public void setPreviousTile(Tile newTile) {this.previousTile = newTile;}
 }

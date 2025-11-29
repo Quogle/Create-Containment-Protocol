@@ -1,6 +1,6 @@
 package com.quogle.lavarise.sokoban;
 
-public enum PlayerState {
+public enum PlayerState implements AnimatableState {
     IDLE_FRONT("idle_front", null),
     IDLE_BACK("idle_back", null),
     IDLE_LEFT("idle_left", null),
@@ -18,7 +18,8 @@ public enum PlayerState {
         this.nextState = nextState;
     }
 
+    @Override
     public String getAnimKey() { return animKey; }
+    @Override
     public PlayerState getNextState() { return nextState; }
-    public boolean hasNextState() { return nextState != null; }
 }

@@ -8,13 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ArrowTile extends Tile implements Rotatable {
-    private Direction direction;
+    public Direction direction;
     private ResourceLocation[] frames;
     private int currentFrame = 0;
 
     public ArrowTile(int x, int y, Direction dir, Level level) {
         super(x, y, level);
         this.direction = dir;
+        this.setType(TileType.ARROW);
         updateFrames();
         setCanRotate(true);
     }

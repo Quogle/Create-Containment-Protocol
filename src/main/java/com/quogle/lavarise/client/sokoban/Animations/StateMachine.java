@@ -1,47 +1,46 @@
 package com.quogle.lavarise.client.sokoban.Animations;
 
+import com.quogle.lavarise.sokoban.AnimatableState;
 import java.util.HashMap;
 import java.util.Map;
 
-public class StateMachine<T extends Enum<T>> {
-    private T currentState;
-    private final Map<T, Runnable> onEnterActions = new HashMap<>();
-    private final Map<T, Runnable> onExitActions = new HashMap<>();
+public class StateMachine {
+    private AnimatableState currentState;
+    private final Map<AnimatableState, Runnable> onEnterActions = new HashMap<>();
+    private final Map<AnimatableState, Runnable> onExitActions = new HashMap<>();
+    private final Map<AnimatableState, Runnable> onTickActions = new HashMap<>();
 
-    public StateMachine(T initialState) {
+    public StateMachine(AnimatableState initialState) {
         this.currentState = initialState;
     }
 
-    public T getState() {
+    public AnimatableState getState() {
         return currentState;
     }
 
-    public void setState(T newState) {
+    public void setState(AnimatableState newState) {
         if (newState == currentState) return;
-        // Exit current
-        if (onExitActions.containsKey(currentState)) onExitActions.get(currentState).run();
-        // Enter new
-        T oldState = currentState;
+
+        if (onExitActions.containsKey(currentState))
+            onExitActions.get(currentState).run();
+
         currentState = newState;
-        if (onEnterActions.containsKey(newState)) onEnterActions.get(newState).run();
+
+        if (onEnterActions.containsKey(newState))
+            onEnterActions.get(newState).run();
     }
 
     public void tick() {
         Runnable tickAction = onTickActions.get(currentState);
         if (tickAction != null) tickAction.run();
+
+        // Automatically transition to next state if it exists
+        if (currentState.hasNextState()) {
+            setState(currentState.getNextState());
+        }
     }
 
-    private final Map<T, Runnable> onTickActions = new HashMap<>();
-
-    public void onTick(T state, Runnable action) {
-        onTickActions.put(state, action);
-    }
-
-    public void onEnter(T state, Runnable action) {
-        onEnterActions.put(state, action);
-    }
-
-    public void onExit(T state, Runnable action) {
-        onExitActions.put(state, action);
-    }
+    public void onTick(AnimatableState state, Runnable action) { onTickActions.put(state, action); }
+    public void onEnter(AnimatableState state, Runnable action) { onEnterActions.put(state, action); }
+    public void onExit(AnimatableState state, Runnable action) { onExitActions.put(state, action); }
 }

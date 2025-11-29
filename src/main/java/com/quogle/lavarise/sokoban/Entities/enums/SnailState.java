@@ -1,6 +1,8 @@
 package com.quogle.lavarise.sokoban.Entities.enums;
 
-public enum SnailState {
+import com.quogle.lavarise.sokoban.AnimatableState;
+
+public enum SnailState implements AnimatableState {
     SNAIL_UP("idle_up", null),
     SNAIL_DOWN("idle_down", null),
     SNAIL_LEFT("idle_left", null),

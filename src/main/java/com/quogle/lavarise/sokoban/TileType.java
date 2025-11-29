@@ -5,8 +5,10 @@ import net.minecraft.resources.ResourceLocation;
 public enum TileType implements Rotatable {
 
     FLOOR(Assets.FLOOR,false, false),
+    CRACKED(Assets.CRACKED,false, false),
     WALL(Assets.WALL,true, false),
     VOID(Assets.VOID,false, false),
+    EXIT(Assets.EXIT,false, false),
     IMPRINT(Assets.IMPRINT,false, false),
     ARROW(Assets.ARROW_RIGHT1,false, true),
     HP(Assets.HP,false, false),
@@ -16,7 +18,8 @@ public enum TileType implements Rotatable {
     BLANK(Assets.BLANK,false, false),
     FIRE(Assets.FIRE,false, false),
     ICE(Assets.ICE,false, false),
-    WATER(Assets.WATER,false, false);
+    WATER(Assets.WATER,false, false),
+    ROTATE(Assets.WATER,false, false);
 
     private final ResourceLocation texture;
     private final boolean solid;

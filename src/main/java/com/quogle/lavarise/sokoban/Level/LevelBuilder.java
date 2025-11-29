@@ -13,7 +13,7 @@ public class LevelBuilder {
         level.getTile(1, level.getHeight() - 1).setType(TileType.HP);
         level.getTile(2, level.getHeight() - 1).setType(TileType.NUMBER);
         level.getTile(4, level.getHeight() - 1).setType(TileType.BASIC).addProperty(Property.SELECTABLE);
-        level.getTile(5, level.getHeight() - 1).setType(TileType.FIRE).addProperty(Property.SELECTABLE);
+        level.getTile(5, level.getHeight() - 1).setType(TileType.ROTATE).addProperty(Property.SELECTABLE);
         level.getTile(6, level.getHeight() - 1).setType(TileType.FIRE).addProperty(Property.SELECTABLE);
         level.getTile(7, level.getHeight() - 1).setType(TileType.ICE).addProperty(Property.SELECTABLE);
         level.getTile(8, level.getHeight() - 1).setType(TileType.WATER).addProperty(Property.SELECTABLE);

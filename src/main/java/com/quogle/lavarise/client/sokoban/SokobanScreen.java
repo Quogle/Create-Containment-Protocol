@@ -1,15 +1,13 @@
 package com.quogle.lavarise.client.sokoban;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.quogle.lavarise.client.sokoban.Animations.StateMachine;
 import com.quogle.lavarise.client.sokoban.Animations.Animation;
-import com.quogle.lavarise.client.sokoban.Animations.AnimationAssets;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.sokoban.*;
 import com.quogle.lavarise.sokoban.Entities.Cursor;
-import com.quogle.lavarise.sokoban.Entities.Snail;
 import com.quogle.lavarise.sokoban.Level.*;
 import com.quogle.lavarise.sokoban.Tiles.ArrowTile;
+import com.quogle.lavarise.sokoban.Tiles.ExitTile;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -25,7 +23,7 @@ import java.util.Set;
 public class SokobanScreen extends Screen {
     private final int tileSize = 64;
     private Player player;
-    private Level currentLevel;
+    public Level currentLevel;
     private Cursor cursor;
 
     private boolean editorMode = false;
@@ -49,7 +47,7 @@ public class SokobanScreen extends Screen {
 
         player = currentLevel.getPlayers().isEmpty() ? null : currentLevel.getPlayers().get(0);
 
-        cursor = new Cursor(currentLevel, EntityType.CURSOR);
+        cursor = new Cursor(currentLevel, EntityType.CURSOR, animManager);
         currentLevel.addCursor(cursor);
 
         editorController = new EditorController(currentLevel);
@@ -78,7 +76,7 @@ public class SokobanScreen extends Screen {
                 currentLevel = loaded;
                 player = currentLevel.getPlayers().isEmpty() ? null : currentLevel.getPlayers().get(0);
                 editorController = new EditorController(currentLevel);
-                cursor = new Cursor(currentLevel, EntityType.CURSOR);
+                cursor = new Cursor(currentLevel, EntityType.CURSOR, animManager);
                 currentLevel.addCursor(cursor);
             }
             return true;
@@ -128,11 +126,13 @@ public class SokobanScreen extends Screen {
 
                 ResourceLocation tileTexture = switch (tile.getType()) {
                     case FLOOR -> Assets.FLOOR;
+                    case CRACKED -> Assets.CRACKED;
                     case WALL -> Assets.WALL;
                     case IMPRINT -> Assets.IMPRINT;
                     case HP -> Assets.HP;
                     case BLANK -> Assets.BLANK;
                     case FIRE -> Assets.FIRE;
+                    case ROTATE -> Assets.ROTATE;
                     case ICE -> Assets.ICE;
                     case WATER -> Assets.WATER;
                     case BASIC -> Assets.BASIC;
@@ -142,14 +142,17 @@ public class SokobanScreen extends Screen {
                 };
 
                 if (tile instanceof ArrowTile arrowTile) tileTexture = arrowTile.getCurrentFrame();
+                if (tile instanceof ExitTile exitTile) tileTexture = exitTile.getSprite();
 
+                //Tile shader color
                 if (tile.hasProperty(Property.FIRE)) RenderSystem.setShaderColor(1f, 0f, 0f, 1f);
-                else if (tile.hasProperty(Property.ICE)) RenderSystem.setShaderColor(0.5f, 0.5f, 1f, 1f);
+                else if (tile.hasProperty(Property.ICE)) RenderSystem.setShaderColor(0.5f, 0.9f, 1.0f, 1f);
+                else if (tile.hasProperty(Property.WATER)) RenderSystem.setShaderColor(0.5f, 0.5f, 1f, 1f);
+                else if (tile.hasProperty(Property.ROTATE)) RenderSystem.setShaderColor(1.0f, 0.53f, 1.0f, 1f);
                 else RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
                 guiGraphics.blit(tileTexture, drawX, drawY, 0, 0, dynamicTileSize, dynamicTileSize,
                         dynamicTileSize, dynamicTileSize);
-
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             }
         }
@@ -168,32 +171,29 @@ public class SokobanScreen extends Screen {
             }
         }
 
-        //Render entities
-        for (Player p : currentLevel.getPlayers()) {
-            p.tickAnimations();
-            Animation anim = p.getAnimationManager().get(p.getCurrentState().getAnimKey());
+        //render entities
+        for (Entity e : currentLevel.getEntities()) {
+            e.tickAnimations(); // advance animation frames
 
-            float drawX = currentLevel.isFreemove() ? p.posX * dynamicTileSize + offsetX
-                    : p.getX() * dynamicTileSize + offsetX;
-            float drawY = currentLevel.isFreemove() ? p.posY * dynamicTileSize + offsetY
-                    : p.getY() * dynamicTileSize + offsetY;
+            Animation anim = e.getAnimationManager().get(e.getCurrentAnimationKey());
 
-            guiGraphics.blit(anim.getCurrentFrame(),
-                    (int) drawX, (int) drawY,
-                    0, 0, dynamicTileSize, dynamicTileSize,
-                    dynamicTileSize, dynamicTileSize);
+            float drawX = e.getX();
+            float drawY = e.getY();
+
+            if (e instanceof Player p && currentLevel.isFreemove()) {
+                drawX = p.posX;
+                drawY = p.posY;
+            }
+
+            e.render(guiGraphics, offsetX, offsetY, dynamicTileSize, anim, drawX, drawY);
         }
-
-        // --- Render other entities ---
-        for (Cursor c : currentLevel.getCursors()) c.render(guiGraphics, offsetX, offsetY, dynamicTileSize);
-        for (Snail s : currentLevel.getSnails()) s.render(guiGraphics, offsetX, offsetY, dynamicTileSize);
-        for (Box b : currentLevel.getBoxes()) b.render(guiGraphics, offsetX, offsetY, dynamicTileSize);
 
         if(editorMode) {
         EditorCursor ecursor = editorController.getEditorCursor();
         int drawX = offsetX + ecursor.getX() * dynamicTileSize;
         int drawY = offsetY + ecursor.getY() * dynamicTileSize;
 
+        Tile tileUnderCursor = currentLevel.getTile(ecursor.getX(), ecursor.getY());
         ResourceLocation previewTexture = getResourceLocation();
 
         if (previewTexture != null) {
@@ -216,13 +216,14 @@ public class SokobanScreen extends Screen {
             TileType previewTile = editorController.getSelectedTileType();
             Direction dir = editorController.getSelectedTileDirection(); // direction set in editor
             return previewTile.getPreview(dir); // Rotatable tiles return rotated preview, others default
-        }
-        else if (editorController.getActiveTab() == EditorTab.ENTITY) {
+        } else if (editorController.getActiveTab() == EditorTab.ENTITY) {
             EntityType previewEntity = editorController.getSelectedEntityType();
             Direction dir = editorController.getSelectedEntityDirection();
             return previewEntity.getPreview(dir); // Rotatable entities return rotated preview, others default
+        } else if (editorController.getActiveTab() == EditorTab.PROPERTY) {
+            Property previewProperty = editorController.getSelectedProperty();
+            return previewProperty.getPreviewTexture();
         }
-
         return null;
     }
 
@@ -230,6 +231,8 @@ public class SokobanScreen extends Screen {
     private void movePlayer(int dx, int dy) {
         for (Player p : currentLevel.getPlayers()) {
             p.move(dx, dy, currentLevel);
+            tryEnterExit(player);
+            enterVoid(player);
             Tile t = currentLevel.getTile(p.getX(), p.getY());
             if (t.hasProperty(Property.ICE)) { /* TODO: slide logic */ }
         }
@@ -238,5 +241,51 @@ public class SokobanScreen extends Screen {
     public void enableEditorMode () {
         editorMode = true;
         editorCursor = new EditorCursor(currentLevel, editorController, EntityType.CURSOR);
+    }
+    public void tryEnterExit(Player player) {
+        Tile tile = currentLevel.getTile(player.getX(), player.getY());
+        if (tile instanceof ExitTile) {
+            // Increase floor count
+            currentLevel.setCurrentFloor(currentLevel.getCurrentFloor() + 1);
+
+            // Build filename for next floor
+            String nextFile = currentLevel.getCurrentZone() + currentLevel.getCurrentFloor() + ".json";
+            System.out.println("Loading next level: " + nextFile);
+            Level nextLevel = Level.loadFromFile(nextFile);
+
+            assert nextLevel != null;
+            nextLevel.setCurrentZone(currentLevel.currentZone);
+            nextLevel.setCurrentFloor(currentLevel.currentFloor);
+
+            currentLevel = nextLevel;
+            this.player = currentLevel.getPlayers().isEmpty() ? null : currentLevel.getPlayers().get(0);
+
+            cursor = new Cursor(currentLevel, EntityType.CURSOR, animManager);
+            currentLevel.addCursor(cursor);
+
+            editorController = new EditorController(currentLevel);
+        }
+    }
+    public void enterVoid(Player player) {
+        Tile tile = currentLevel.getTile(player.getX(), player.getY());
+        if (tile.getType() == TileType.VOID) {
+
+            // Build filename for next floor
+            String nextFile = currentLevel.getCurrentZone() + currentLevel.getCurrentFloor() + ".json";
+            System.out.println("Loading next level: " + nextFile);
+            Level nextLevel = Level.loadFromFile(nextFile);
+
+            assert nextLevel != null;
+            nextLevel.setCurrentZone(currentLevel.currentZone);
+            nextLevel.setCurrentFloor(currentLevel.currentFloor);
+
+            currentLevel = nextLevel;
+            this.player = currentLevel.getPlayers().isEmpty() ? null : currentLevel.getPlayers().get(0);
+
+            cursor = new Cursor(currentLevel, EntityType.CURSOR, animManager);
+            currentLevel.addCursor(cursor);
+
+            editorController = new EditorController(currentLevel);
+        }
     }
 }

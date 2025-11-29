@@ -1,7 +1,6 @@
 package com.quogle.lavarise.sokoban;
 
 import com.quogle.lavarise.sokoban.Level.Level;
-import com.quogle.lavarise.sokoban.Direction;
 
 import java.util.HashSet;
 import java.util.Set;

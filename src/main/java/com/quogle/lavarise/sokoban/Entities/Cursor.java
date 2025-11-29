@@ -3,12 +3,8 @@ package com.quogle.lavarise.sokoban.Entities;
 import com.quogle.lavarise.client.sokoban.Animations.Animation;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationAssets;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
-import com.quogle.lavarise.sokoban.Entities.enums.SnailState;
-import com.quogle.lavarise.sokoban.Entity;
-import com.quogle.lavarise.sokoban.EntityType;
+import com.quogle.lavarise.sokoban.*;
 import com.quogle.lavarise.sokoban.Level.Level;
-import com.quogle.lavarise.sokoban.Property;
-import com.quogle.lavarise.sokoban.Tile;
 import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.Collections;
@@ -21,10 +17,9 @@ public class Cursor extends Entity {
     private final Level level;
     private List<Tile> selectableTiles;
     private int index = 0;
-    private final AnimationManager animManager = new AnimationManager();
 
-    public Cursor(Level level, EntityType type) {
-        super(0, 0, type);
+    public Cursor(Level level, EntityType type, AnimationManager animManager) {
+        super(0, 0, type, animManager);
         this.level = level;
         refreshSelectableTiles();
         snapToCurrent();
@@ -33,7 +28,25 @@ public class Cursor extends Entity {
 
     // Update list of tiles with the SELECTABLE property
     public void refreshSelectableTiles() {
+        List<Tile> oldSelectable = selectableTiles;
         selectableTiles = level.getTilesWithProperty(Property.SELECTABLE);
+
+        if (selectableTiles.isEmpty()) return;
+
+        if (oldSelectable != null && !oldSelectable.isEmpty()) {
+            Tile oldTile = oldSelectable.get(index);
+            int newIndex = selectableTiles.indexOf(oldTile);
+            index = newIndex != -1 ? newIndex : 0; // if old tile still exists, keep index
+        } else {
+            index = 0;
+        }
+
+        snapToCurrent();
+    }
+
+    public void setSelectedTile(Tile tile) {
+        this.index = selectableTiles.indexOf(tile);
+        snapToCurrent();
     }
 
     // Move cursor to the next selectable tile
@@ -59,18 +72,7 @@ public class Cursor extends Entity {
     }
 
     private void initAnimations() {
-        animManager.add("cursor", AnimationAssets.CURSOR, 40, true);
-    }
 
-    public void render(GuiGraphics guiGraphics, int offsetX, int offsetY, int tileSize) {
-        // Tick the snail's animation
-        animManager.tickAll();
-
-        Animation anim = animManager.get("cursor");
-        guiGraphics.blit(anim.getCurrentFrame(),
-                offsetX + getX() * tileSize,
-                offsetY + getY() * tileSize,
-                0, 0, tileSize, tileSize,
-                tileSize, tileSize);
+        getAnimationManager().add("DEFAULT", AnimationAssets.CURSOR, 40, true);
     }
 }
