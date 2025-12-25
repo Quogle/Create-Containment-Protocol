@@ -1,4 +1,6 @@
-package com.quogle.lavarise.sokoban;
+package com.quogle.lavarise.sokoban.Entities.enums;
+
+import com.quogle.lavarise.sokoban.AnimatableState;
 
 public enum PlayerState implements AnimatableState {
     IDLE_FRONT("idle_front", null),

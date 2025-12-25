@@ -1,12 +1,16 @@
-package com.quogle.lavarise.sokoban;
+package com.quogle.lavarise.sokoban.Entities.enums;
 
+import com.quogle.lavarise.sokoban.Assets;
+import com.quogle.lavarise.sokoban.Direction;
+import com.quogle.lavarise.sokoban.Rotatable;
 import net.minecraft.resources.ResourceLocation;
 
-public enum EntityType implements Rotatable{
+public enum EntityType implements Rotatable {
 
     BOX(Assets.BOX, true, true, false),        // solid, pushable
     PLAYER(Assets.PLAYER, true, false, false), // solid, not pushable
     SNAIL(Assets.SNAIL_DOWN, true, false, true),
+    MOLE(Assets.MOLE, false, false, false),
     CURSOR(Assets.CURSOR, false, false, false);
 
     private final ResourceLocation texture;

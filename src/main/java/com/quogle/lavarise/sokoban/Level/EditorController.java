@@ -1,17 +1,17 @@
 package com.quogle.lavarise.sokoban.Level;
 
 import com.quogle.lavarise.sokoban.*;
-import com.quogle.lavarise.sokoban.Level.Level;
-import com.quogle.lavarise.sokoban.Tiles.ArrowTile;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import org.lwjgl.glfw.GLFW;
 
 public class EditorController {
     private final Level level;
     private EditorTab activeTab = EditorTab.TILE; // default
-    private EditorCursor editorCursor;
+    private final EditorCursor editorCursor;
     private TileType selectedTileType = TileType.FLOOR;
     private Property selectedProperty = Property.FIRE;
-    private EntityType selectedEntityType = EntityType.PLAYER; // default
+    private EntityType selectedEntityType = EntityType.PLAYER;
+    private EntityType selectedMisc = EntityType.CURSOR;// default
     private Direction selectedTileDirection = Direction.RIGHT;
     private Direction selectedEntityDirection = Direction.DOWN;// default for preview
 
@@ -44,9 +44,9 @@ public class EditorController {
     public Direction getSelectedTileDirection() {
         return selectedTileDirection;
     }
-    public EntityType getSelectedEntityType() {
-        return selectedEntityType;
-    }
+    public EntityType getSelectedEntityType() { return selectedEntityType;}
+    public EntityType getSelectedMisc() { return selectedMisc;}
+
     public Property getSelectedProperty() {
         return selectedProperty;
     }
@@ -71,6 +71,7 @@ public class EditorController {
                 case 1 -> EntityType.PLAYER;
                 case 2 -> EntityType.BOX;
                 case 3 -> EntityType.SNAIL;
+                case 4 -> EntityType.MOLE;
                 default -> selectedEntityType;
             };
 
@@ -81,9 +82,10 @@ public class EditorController {
                 case 4 -> Property.WATER;
                 default -> selectedProperty;
             };
-            case MISC -> {
-                // TODO: set misc selections
-            }
+            case MISC -> selectedMisc = switch (number) {
+                case 1 -> EntityType.CURSOR;
+                default -> selectedMisc;
+            };
         }
     }
 
@@ -97,7 +99,10 @@ public class EditorController {
             editorCursor.clearProperties();
             editorCursor.addProperty(selectedProperty);
         }
-        // TODO: handle other tabs
+        else if (activeTab == EditorTab.MISC) {
+            editorCursor.clearEntities();
+            editorCursor.placeEntity(selectedMisc, selectedEntityDirection);
+        }
     }
 
     private void rotateSelected() {

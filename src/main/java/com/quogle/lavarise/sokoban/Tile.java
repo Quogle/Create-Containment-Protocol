@@ -1,5 +1,8 @@
 package com.quogle.lavarise.sokoban;
 
+import com.quogle.lavarise.sokoban.Entities.Entity;
+import com.quogle.lavarise.sokoban.Entities.Mole;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Level.Level;
 
 import java.util.HashSet;
@@ -13,6 +16,8 @@ public class Tile {
     private final Set<Property> properties = new HashSet<>();
     private Entity entity = null;
     private boolean canRotate = false;
+    private Mole mole;
+
 
     // Only set in tiles that actually use direction
     protected Direction direction;
@@ -25,9 +30,18 @@ public class Tile {
         this.direction = Direction.RIGHT;
     }
 
-    public boolean isWalkable() {
-        return type != TileType.WALL && entity == null;
+    public boolean isWalkable(Entity entityTryingToEnter) {
+        // Tile itself not solid
+        if (type == TileType.WALL) return false;
+
+        // Normal entity blocks unless stackable
+        if (this.entity != null && !this.entity.isStackable()) return false;
+
+        // Mole blocks only players
+        return mole == null || entityTryingToEnter.getType() != EntityType.PLAYER;
     }
+
+
 
     public boolean hasProperty(Property property) {
         return properties.contains(property);
@@ -72,7 +86,32 @@ public class Tile {
 
     public boolean hasEntity() { return entity != null; }
     public Entity getEntity() { return entity; }
-    public void setEntity(Entity entity) { this.entity = entity; }
+    public void setEntity(Entity newEntity) {
+        if (newEntity instanceof Mole) {
+            this.mole = (Mole) newEntity; // store in mole field only
+            return;
+        }
+        this.entity = newEntity; // all other normal entities
+    }
+
+
+    public boolean hasNonMoleEntity() {
+        return entity != null && !(entity instanceof Mole);
+    }
+
+    public void setMole(Mole m) {
+        this.mole = m;
+    }
+
+    public boolean hasMole() {
+        return mole != null;
+    }
+
+    public Mole getMole() {
+        return mole;
+    }
+
+
     public boolean getCanRotate() { return canRotate; }
     public void setCanRotate(boolean canRotate) { this.canRotate = canRotate; }
 }

@@ -1,11 +1,10 @@
 package com.quogle.lavarise.sokoban.Entities;
 
-import com.quogle.lavarise.client.sokoban.Animations.Animation;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationAssets;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.sokoban.*;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Level.Level;
-import net.minecraft.client.gui.GuiGraphics;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +17,7 @@ public class Cursor extends Entity {
     private List<Tile> selectableTiles;
     private int index = 0;
 
-    public Cursor(Level level, EntityType type, AnimationManager animManager) {
+    public Cursor( AnimationManager animManager, EntityType type,  Level level) {
         super(0, 0, type, animManager);
         this.level = level;
         refreshSelectableTiles();

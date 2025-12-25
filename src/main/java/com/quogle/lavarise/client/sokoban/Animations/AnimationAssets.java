@@ -66,6 +66,28 @@ public class AnimationAssets {
             ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/snail_front2.png")
     };
 
+
+    public static final ResourceLocation[] MOLE_IDLE = new ResourceLocation[]{
+            ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/mole/mole_idle2.png"),
+            ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/mole/mole_idle1.png")
+    };
+
+    public static final ResourceLocation[] MOLE_BLOCK = new ResourceLocation[]{
+            ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/mole/mole_bump1.png"),
+            ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/mole/mole_bump2.png"),
+            ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/mole/mole_bump3.png"),
+            ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/mole/mole_bump2.png"),
+            ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/mole/mole_bump1.png"),
+    };
+
+    public static final int[] BUMP_DURATIONS = new int[] {
+            10,
+            10,
+            50,
+            10,
+            10
+    };
+
     //MISC
     public static final ResourceLocation[] CURSOR = new ResourceLocation[]{
             ResourceLocation.fromNamespaceAndPath(LavaRise.MOD_ID, "textures/gui/sokoban/entity/cursor_1.png"),

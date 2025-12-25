@@ -1,10 +1,11 @@
 package com.quogle.lavarise.sokoban.Entities;
 
-import com.quogle.lavarise.client.sokoban.Animations.Animation;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationAssets;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.client.sokoban.Animations.StateMachine;
 import com.quogle.lavarise.sokoban.*;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
+import com.quogle.lavarise.sokoban.Entities.enums.PlayerState;
 import com.quogle.lavarise.sokoban.Level.Level;
 import com.quogle.lavarise.sokoban.Tiles.ArrowTile;
 import com.quogle.lavarise.sokoban.Tiles.ExitTile;
@@ -57,36 +58,63 @@ public class Player extends Entity {
             lastDy = dy;
         }
 
+        // Reset mole solidity before moving
+        for (Entity e : level.getEntities()) {
+            if (e instanceof Mole mole) {
+                mole.setSolidOverride(false);
+            }
+        }
+
         int newX = getX() + dx;
         int newY = getY() + dy;
-
-        // Check bounds
-        if (isOutOfBounds(newX, newY, level)) {
-            setIdleOrPushState(dx, dy, true); // blocked, still play push
-            moveIceEntities(level, null);
-            onPlayerMove(level);
-            return;
-        }
-
         Tile targetTile = level.getTile(newX, newY);
 
-        // Walkable tile
-        if (canMoveToTile(targetTile)) {
-            moveToTile(newX, newY, dx, dy, level, null);
-            return;
-        }
-        // Blocked tile
-        setIdleOrPushState(dx, dy, true); // blocked, still play push
-
+        // Track what happened for animations
+        boolean moved = false;
+        boolean pushed = false;
         Entity pushedEntity = null;
-        // Pushable Entity Logic
-        if (targetTile.hasEntity()) {
+
+        // Out-of-bounds
+        if (isOutOfBounds(newX, newY, level)) {
+            pushed = true; // blocked
+        }
+        // Mole blocking
+        else if (targetTile.hasEntity() && targetTile.getEntity() instanceof Mole mole) {
+            mole.activateSolid(); // temporarily solid
+            pushed = true;
+        }
+        // Pushable entity
+        else if (targetTile.hasEntity() && targetTile.getEntity().isPushable()) {
             pushedEntity = targetTile.getEntity();
             handlePushableEntity(pushedEntity, dx, dy, level);
+            pushed = true; // push animation
         }
+        // Walkable tile
+        else if (targetTile.isWalkable(this)) {
+            Tile oldTile = level.getTile(getX(), getY());
+        if (oldTile.getEntity() == this) oldTile.setEntity(null);
 
+        setPosition(newX, newY);
+        targetTile.setEntity(this);
+
+        moved = true;
+        onPlayerMove(level);
+        }
+        // Anything else -> blocked
+        else {
+            Entity blockingEntity = targetTile.getMole();
+            if (blockingEntity instanceof Mole mole) {
+                mole.onBlock();
+            }
+            pushed = true;
+        }
+        // Decide final animation
+        setIdleOrPushState(dx, dy, pushed);
+        // Always move ice entities after player/push
         moveIceEntities(level, pushedEntity);
-
+        // Always handle void entities at the end
+        level.handleVoidEntities();
+        // Trigger any post-move effects
         onPlayerMove(level);
     }
 
@@ -94,19 +122,25 @@ public class Player extends Entity {
         float nextX = posX + dx * speed * deltaTime;
         float nextY = posY + dy * speed * deltaTime;
 
-        //Prevent player from entering tiles set as solid
         int tileX = (int) nextX;
         int tileY = (int) nextY;
 
         if (tileX >= 0 && tileX < level.getWidth() && tileY >= 0 && tileY < level.getHeight()) {
-            Tile tile = level.getTile(tileX, tileY);
-            if (!tile.getType().isSolid()) {
+            Tile currentTile = level.getTile((int) posX, (int) posY);
+            Tile nextTile = level.getTile(tileX, tileY);
+
+            if (!nextTile.getType().isSolid() && (!nextTile.hasEntity() || nextTile.getEntity() == this)) {
+                // Clear old tile reference
+                if (currentTile != null && currentTile.getEntity() == this) currentTile.setEntity(null);
+
                 posX = nextX;
                 posY = nextY;
+
+                // Update new tile reference
+                if (nextTile != null) nextTile.setEntity(this);
             }
         }
 
-        // Update animation based on dx/dy
         updateAnimation(dx, dy);
     }
 
@@ -158,9 +192,9 @@ public class Player extends Entity {
         int width = level.getWidth();
         int height = level.getHeight();
 
-        Tile playerTile = level.getTile(getX(),getY());
-        if(playerTile != previousTile) {
-            if(previousTile.getType() == TileType.CRACKED && !previousTile.hasProperty(Property.ICE)) {
+        Tile playerTile = level.getTile(getX(), getY());
+        if (playerTile != previousTile) {
+            if (previousTile.getType() == TileType.CRACKED && !previousTile.hasProperty(Property.ICE)) {
                 previousTile.setType(VOID);
             }
         }
@@ -215,9 +249,10 @@ public class Player extends Entity {
                 target.addProperty(p);
             }
         }
-        for (Snail s : level.getSnails()) {
-            s.moveOneStep(level);
-        }
+        level.getEntities().stream()
+                .filter(e -> e instanceof Snail)
+                .map(e -> (Snail) e)
+                .forEach(s -> s.moveOneStep(level));
     }
 
     private void setIdleOrPushState(int dx, int dy, boolean pushing) {
@@ -286,7 +321,10 @@ public class Player extends Entity {
     }
 
     private boolean canMoveToTile(Tile tile) {
-        return !tile.hasEntity() && !tile.getType().isSolid();
+        // Block movement if the tile has a solid entity (like an activated mole)
+        if (tile.hasEntity() && tile.getEntity().isSolid()) return false;
+        // Otherwise, block if tile itself is solid
+        return !tile.getType().isSolid();
     }
 
     private void moveToTile(int x, int y, int dx, int dy, Level level, Entity pushedEntity) {
@@ -376,7 +414,8 @@ public class Player extends Entity {
             Tile currentTile = level.getTile(entity.getX(), entity.getY());
 
             // Stop sliding if blocked
-            if (targetTile.hasEntity() || targetTile.getType().isSolid()) {
+            Entity blockingEntity = targetTile.getEntity();
+            if ((blockingEntity != null && blockingEntity.isSolid()) || targetTile.getType().isSolid()) {
                 entity.clearSlide();
                 continue;
             }
@@ -387,7 +426,10 @@ public class Player extends Entity {
             }
 
             // Move entity
-            currentTile.setEntity(null);
+            if (currentTile.getEntity() == entity) {
+                currentTile.setEntity(null);
+            }
+
             targetTile.setEntity(entity);
             entity.setPosition(newX, newY);
 
@@ -399,9 +441,6 @@ public class Player extends Entity {
             }
         }
     }
-
-
-
     @Override
     public EntityType getType() {
         return EntityType.PLAYER;

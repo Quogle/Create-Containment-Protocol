@@ -5,6 +5,7 @@ import com.quogle.lavarise.client.sokoban.Animations.Animation;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.sokoban.*;
 import com.quogle.lavarise.sokoban.Entities.Cursor;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Level.*;
 import com.quogle.lavarise.sokoban.Tiles.ArrowTile;
 import com.quogle.lavarise.sokoban.Tiles.ExitTile;
@@ -17,8 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class SokobanScreen extends Screen {
     private final int tileSize = 64;
@@ -43,13 +43,6 @@ public class SokobanScreen extends Screen {
 
     public void loadLevel() {
         currentLevel = LevelBuilder.createExampleLevel();
-        currentLevel.ensurePlayerExists();
-
-        player = currentLevel.getPlayers().isEmpty() ? null : currentLevel.getPlayers().get(0);
-
-        cursor = new Cursor(currentLevel, EntityType.CURSOR, animManager);
-        currentLevel.addCursor(cursor);
-
         editorController = new EditorController(currentLevel);
         editorMode = false;
     }
@@ -58,12 +51,14 @@ public class SokobanScreen extends Screen {
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         keysHeld.add(keyCode);
 
+        // Toggle editor mode
         if (keyCode == GLFW.GLFW_KEY_LEFT_SHIFT) {
             editorMode = !editorMode;
             if (editorMode) enableEditorMode();
             return true;
         }
 
+        // Editor controls
         if (editorMode) {
             if (keyCode == GLFW.GLFW_KEY_Z) {
                 isZHeld = true;
@@ -74,23 +69,33 @@ public class SokobanScreen extends Screen {
             Level loaded = editorController.handleKeyPress(keyCode, isZHeld);
             if (loaded != null) {
                 currentLevel = loaded;
-                player = currentLevel.getPlayers().isEmpty() ? null : currentLevel.getPlayers().get(0);
                 editorController = new EditorController(currentLevel);
-                cursor = new Cursor(currentLevel, EntityType.CURSOR, animManager);
-                currentLevel.addCursor(cursor);
             }
             return true;
         }
 
-        // Tile move mode
-        if (!currentLevel.isFreemove() && player != null) {
+        // Tile-based movement for all players
+        if (!currentLevel.isFreemove()) {
             switch (keyCode) {
                 case GLFW.GLFW_KEY_LEFT -> movePlayer(-1, 0);
                 case GLFW.GLFW_KEY_RIGHT -> movePlayer(1, 0);
                 case GLFW.GLFW_KEY_UP -> movePlayer(0, -1);
                 case GLFW.GLFW_KEY_DOWN -> movePlayer(0, 1);
-                case GLFW.GLFW_KEY_X -> cursor.cycle();
-                case GLFW.GLFW_KEY_Z -> player.placePropertiesInFront(currentLevel, cursor.getSelectedTile());
+                case GLFW.GLFW_KEY_X -> currentLevel.getEntities().stream()
+                        .filter(e -> e instanceof Cursor)
+                        .map(e -> (Cursor) e)
+                        .forEach(Cursor::cycle);
+                case GLFW.GLFW_KEY_Z -> {
+                    // Place properties in front for all players using all cursors
+                    for (Entity e : currentLevel.getEntities()) {
+                        if (e instanceof Player p) {
+                            currentLevel.getEntities().stream()
+                                    .filter(ent -> ent instanceof Cursor)
+                                    .map(ent -> (Cursor) ent)
+                                    .forEach(c -> p.placePropertiesInFront(currentLevel, c.getSelectedTile()));
+                        }
+                    }
+                }
             }
         }
 
@@ -171,9 +176,17 @@ public class SokobanScreen extends Screen {
             }
         }
 
+        //sort entities based on their rendering layer
+        List<Entity> sorted = new ArrayList<>(currentLevel.getEntities());
+        sorted.sort(Comparator.comparingInt(Entity::getRenderLayer));
+
+
+
         //render entities
-        for (Entity e : currentLevel.getEntities()) {
-            e.tickAnimations(); // advance animation frames
+        for (Entity e : sorted) {
+            e.tickAnimations();
+            e.update(currentLevel); // advance animation frames
+
 
             Animation anim = e.getAnimationManager().get(e.getCurrentAnimationKey());
 
@@ -224,19 +237,25 @@ public class SokobanScreen extends Screen {
             Property previewProperty = editorController.getSelectedProperty();
             return previewProperty.getPreviewTexture();
         }
+        else if (editorController.getActiveTab() == EditorTab.MISC) {
+            EntityType previewEntity = editorController.getSelectedMisc();
+            Direction dir = editorController.getSelectedEntityDirection();
+            return previewEntity.getPreview(dir);
+        }
         return null;
     }
 
     //Tile based movement helper
     private void movePlayer(int dx, int dy) {
-        for (Player p : currentLevel.getPlayers()) {
-            p.move(dx, dy, currentLevel);
-            tryEnterExit(player);
-            enterVoid(player);
-            Tile t = currentLevel.getTile(p.getX(), p.getY());
-            if (t.hasProperty(Property.ICE)) { /* TODO: slide logic */ }
+        for (Entity e : currentLevel.getEntities()) {
+            if (e instanceof Player p) {
+                p.move(dx, dy, currentLevel);
+                tryEnterExit(p);
+                enterVoid(p);
+            }
         }
     }
+
 
     public void enableEditorMode () {
         editorMode = true;
@@ -258,11 +277,6 @@ public class SokobanScreen extends Screen {
             nextLevel.setCurrentFloor(currentLevel.currentFloor);
 
             currentLevel = nextLevel;
-            this.player = currentLevel.getPlayers().isEmpty() ? null : currentLevel.getPlayers().get(0);
-
-            cursor = new Cursor(currentLevel, EntityType.CURSOR, animManager);
-            currentLevel.addCursor(cursor);
-
             editorController = new EditorController(currentLevel);
         }
     }
@@ -280,11 +294,6 @@ public class SokobanScreen extends Screen {
             nextLevel.setCurrentFloor(currentLevel.currentFloor);
 
             currentLevel = nextLevel;
-            this.player = currentLevel.getPlayers().isEmpty() ? null : currentLevel.getPlayers().get(0);
-
-            cursor = new Cursor(currentLevel, EntityType.CURSOR, animManager);
-            currentLevel.addCursor(cursor);
-
             editorController = new EditorController(currentLevel);
         }
     }

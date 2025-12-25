@@ -2,8 +2,7 @@ package com.quogle.lavarise.sokoban.Entities;
 
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.sokoban.Assets;
-import com.quogle.lavarise.sokoban.Entity;
-import com.quogle.lavarise.sokoban.EntityType;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Level.Level;
 import com.quogle.lavarise.sokoban.Tile;
 import net.minecraft.resources.ResourceLocation;

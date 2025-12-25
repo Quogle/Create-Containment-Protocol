@@ -2,12 +2,10 @@ package com.quogle.lavarise.sokoban.Level;
 
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.sokoban.*;
-import com.quogle.lavarise.sokoban.Entities.Box;
-import com.quogle.lavarise.sokoban.Entities.Cursor;
-import com.quogle.lavarise.sokoban.Entities.Player;
-import com.quogle.lavarise.sokoban.Entities.Snail;
+import com.quogle.lavarise.sokoban.Entities.*;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Tiles.ArrowTile;
 import com.quogle.lavarise.sokoban.Tiles.ExitTile;
 
@@ -26,10 +24,7 @@ public class Level {
     private final int width = 14;
     private final int height = 9;
     private final Tile[][] tiles;
-    private final List<Player> players = new ArrayList<>();
-    private List<Snail> snails = new ArrayList<>();
-    private List<Box> boxes = new ArrayList<>();
-    private List<Cursor> cursors = new ArrayList<>();
+    private final List<Entity> entities = new ArrayList<>();
 
     public Level() {
         tiles = new Tile[height][width];
@@ -68,9 +63,13 @@ public class Level {
     }
 
     public void ensurePlayerExists() {
-        if (players.isEmpty()) {
+        boolean hasPlayer = entities.stream()
+                .anyMatch(e -> e.getType() == EntityType.PLAYER);
+
+        if (!hasPlayer) {
             Player p = new Player(0, 0, new AnimationManager(), EntityType.PLAYER, this);
-            addPlayer(p);
+            addEntity(p);
+            getTile(0, 0).setEntity(p);
         }
     }
 
@@ -114,36 +113,22 @@ public class Level {
         return tiles;
     }
 
-    public List<Player> getPlayers() {
-        return players;
+    public void addEntity(Entity e) {
+        entities.add(e);
     }
 
-    public void addPlayer(Player p) {
-        players.add(p);
-    }
-
-    public void addSnail(Snail s) {
-        snails.add(s);
-    }
-
-    public Snail[] getSnails() {
-        return snails.toArray(new Snail[0]);
-    }
-
-    public void addBox(Box b) {
-        boxes.add(b);
-    }
-
-    public Box[] getBoxes() {
-        return boxes.toArray(new Box[0]);
-    }
-
-    public void addCursor(Cursor c) {
-        cursors.add(c);
-    }
-
-    public Cursor[] getCursors() {
-        return cursors.toArray(new Cursor[0]);
+    public List<Entity> getEntities() {
+        List<Entity> all = new ArrayList<>();
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Tile t = getTile(x, y);
+                if (t != null) {
+                    if (t.getEntity() != null) all.add(t.getEntity());
+                    if (t.getMole() != null) all.add(t.getMole()); // add mole here
+                }
+            }
+        }
+        return all;
     }
 
     public boolean isFreemove() {
@@ -154,33 +139,24 @@ public class Level {
         this.freemove = freemove;
     }
 
-    public List<Entity> getEntities() {
-        List<Entity> all = new ArrayList<>();
-        all.addAll(players);
-        all.addAll(snails);
-        all.addAll(boxes);
-        all.addAll(cursors);
-        return all;
-    }
+
 
     public boolean hasCursors() {
-        return !cursors.isEmpty();
+        return entities.stream().anyMatch(e -> e.getType() == EntityType.CURSOR);
     }
 
     public void refreshAllCursorTiles() {
-        for (Cursor c : cursors) {
-            if (c != null) {
-                c.refreshSelectableTiles();
-            }
-        }
+        entities.stream()
+                .filter(e -> e.getType() == EntityType.CURSOR)
+                .map(e -> (Cursor) e)
+                .forEach(Cursor::refreshSelectableTiles);
     }
 
     public void cycleCursors() {
-        for (Cursor c : cursors) {
-            if (c != null) {
-                c.cycle();
-            }
-        }
+        entities.stream()                 // take the list of entities
+                .filter(e -> e.getType() == EntityType.CURSOR)  // only keep cursors
+                .map(e -> (Cursor) e)     // cast them to Cursor
+                .forEach(Cursor::cycle);  // call cycle() on each
     }
 
     public void addHudProperty(Player player, TileType selectedTileType) {
@@ -226,12 +202,26 @@ public class Level {
         return null;
     }
     public void moveCursorTo(Tile tile) {
-        for (Cursor c : cursors) {
-            if (c != null) {
-                c.setSelectedTile(tile);  // snaps automatically
+        entities.stream()
+                .filter(e -> e.getType() == EntityType.CURSOR)
+                .map(e -> (Cursor) e)
+                .forEach(c -> c.setSelectedTile(tile));
+    }
+
+    public void handleVoidEntities() {
+        for (Entity e : new ArrayList<>(getEntities())) { // copy to avoid modification issues
+            Tile tile = getTile(e.getX(), e.getY());
+            if (tile.getType() == TileType.VOID) {
+                // Remove from tile
+                if (tile.getEntity() == e) tile.setEntity(null);
+                if (tile.getMole() == e) tile.setMole(null);
+                // Remove from entity list
+                entities.remove(e);
+                System.out.println(e.getType() + " fell into the void at " + tile.getX() + "," + tile.getY());
             }
         }
     }
+
 
     // ---------------- Save Level ----------------
     public void saveToFile(String path) {
@@ -259,30 +249,26 @@ public class Level {
 
         // Entities
         data.entities = new ArrayList<>();
-        for (Player p : players) data.entities.add(new EntityData("PLAYER", p.getX(), p.getY()));
+        for (Entity e : entities) {
+            if (e instanceof Player) {
+                data.entities.add(new EntityData("PLAYER", e.getX(), e.getY()));
+            } else if (e instanceof Box) {
+                data.entities.add(new EntityData("BOX", e.getX(), e.getY()));
+            } else if (e instanceof Snail s) {
+                data.entities.add(new EntityData("SNAIL", e.getX(), e.getY(), s.getDirection()));
+            } else if (e instanceof Mole) {
+                data.entities.add(new EntityData("MOLE", e.getX(), e.getY()));
+            }
+            else if (e instanceof Cursor) {
+                data.entities.add(new EntityData("CURSOR", e.getX(), e.getY()));
+            }
 
-        // Boxes
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                Tile t = getTile(x, y);
-                if (t.hasEntity() && t.getEntity() instanceof Box) {
-                    data.entities.add(new EntityData("BOX", x, y));
-                }
-            }
-        }
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                Tile t = getTile(x, y);
-                if (t.hasEntity() && t.getEntity() instanceof Snail s) {
-                    data.entities.add(new EntityData("SNAIL", x, y, s.getDirection()));
-                }
-            }
         }
 
         try (FileWriter writer = new FileWriter(path)) {
             gson.toJson(data, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -332,21 +318,18 @@ public class Level {
             // Restore entities
             for (EntityData ed : data.entities) {
                 Tile t = level.getTile(ed.x, ed.y);
-                switch (ed.type) {
-                    case "PLAYER" -> {
-                        Player p = new Player(ed.x, ed.y, new AnimationManager(), EntityType.PLAYER, level);
-                        level.addPlayer(p);
-                    }
-                    case "BOX" -> {
-                        Box b = new Box(ed.x, ed.y, EntityType.BOX, level);
-                        level.addBox(b);
-                        level.getTile(ed.x, ed.y).setEntity(b);
-                    }
-                    case "SNAIL" -> {
-                        Snail s = new Snail(ed.x, ed.y, ed.dir, new AnimationManager(), EntityType.SNAIL, level);
-                        level.addSnail(s);
-                        level.getTile(ed.x, ed.y).setEntity(s);
-                    }
+                Entity e = switch (ed.type) {
+                    case "PLAYER" -> new Player(ed.x, ed.y, new AnimationManager(), EntityType.PLAYER, level);
+                    case "BOX" -> new Box(ed.x, ed.y, EntityType.BOX, level);
+                    case "SNAIL" -> new Snail(ed.x, ed.y, ed.dir, new AnimationManager(), EntityType.SNAIL, level);
+                    case "MOLE" -> new Mole(ed.x, ed.y, new AnimationManager(), EntityType.MOLE, level);
+                    case "CURSOR" -> new Cursor(new AnimationManager(), EntityType.CURSOR, level);
+                    default -> null;
+                };
+
+                if (e != null) {
+                    level.addEntity(e);  // Add to unified list
+                    if (t != null) t.setEntity(e); // Set entity reference on the tile
                 }
             }
 

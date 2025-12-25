@@ -5,6 +5,7 @@ import com.quogle.lavarise.client.sokoban.Animations.AnimationAssets;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.client.sokoban.Animations.StateMachine;
 import com.quogle.lavarise.sokoban.*;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Entities.enums.SnailState;
 import com.quogle.lavarise.sokoban.Level.Level;
 import net.minecraft.client.gui.GuiGraphics;
@@ -52,8 +53,11 @@ public class Snail extends Entity implements Rotatable {
 
         // Check if tile is walkable and no solid entity
         if (!targetTile.getType().isSolid() && (!targetTile.hasEntity() || !targetTile.getEntity().getType().isSolid())) {
+
             // Move snail
-            level.getTile(getX(), getY()).setEntity(null); // clear current tile
+            if (currentTile.getEntity() == this) {
+                currentTile.setEntity(null);
+            }
             setPosition(newX, newY);
             targetTile.setEntity(this);
 

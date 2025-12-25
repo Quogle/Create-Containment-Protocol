@@ -1,9 +1,14 @@
-package com.quogle.lavarise.sokoban;
+package com.quogle.lavarise.sokoban.Entities;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.quogle.lavarise.client.sokoban.Animations.Animation;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.client.sokoban.Animations.StateMachine;
+import com.quogle.lavarise.sokoban.AnimatableState;
+import com.quogle.lavarise.sokoban.Direction;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
+import com.quogle.lavarise.sokoban.Level.Level;
+import com.quogle.lavarise.sokoban.Property;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
@@ -24,6 +29,8 @@ public class Entity{
     // Overrides
     private boolean pushableOverride = false;
     private boolean hasPushableOverride = false;
+    private boolean solidOverride = false;
+    private boolean hasSolidOverride = false;
     private boolean frozen = false;
 
     public Entity(int x, int y, EntityType type, AnimationManager animManager) {
@@ -101,6 +108,9 @@ public class Entity{
     public Set<Property> getProperties() { return properties; }
     public void clearProperties() { properties.removeIf(Property::isTransferable); }
 
+    public void update(Level level) {}
+
+
     // --- Pushable ---
     public void setPushableOverride(boolean pushable) {
         this.pushableOverride = pushable;
@@ -114,6 +124,27 @@ public class Entity{
     public boolean isPushable() {
         return hasPushableOverride ? pushableOverride : getType().isPushable();
     }
+
+    public void setSolidOverride(boolean solid) {
+        this.solidOverride = solid;
+        this.hasSolidOverride = true;
+    }
+
+    public void clearSolidOverride() {
+        this.hasSolidOverride = false;
+    }
+
+    public boolean isSolid() {
+        return hasSolidOverride ? solidOverride : getType().isSolid();
+    }
+
+    public boolean isStackable() {
+        return false;
+    }
+    public int getRenderLayer() {
+        return 1; // default layer for normal entities
+    }
+
 
     // --- Frozen ---
     public boolean isFrozen() { return frozen; }

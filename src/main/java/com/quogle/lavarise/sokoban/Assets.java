@@ -44,8 +44,9 @@ public class Assets {
     public static final ResourceLocation SNAIL_LEFT    = rl("textures/gui/sokoban/entity/snail_left1.png");
     public static final ResourceLocation SNAIL_RIGHT    = rl("textures/gui/sokoban/entity/snail_right1.png");
 
-    public static final ResourceLocation CURSOR = rl("textures/gui/sokoban/entity/cursor_1.png");
+    public static ResourceLocation MOLE       = rl("textures/gui/sokoban/entity/mole/mole_idle2.png");
 
+    public static final ResourceLocation CURSOR = rl("textures/gui/sokoban/entity/cursor_1.png");
 
     //EDITOR
     public static final ResourceLocation FIRE_PREV   = rl("textures/gui/sokoban/tiles/fire_prev.png");

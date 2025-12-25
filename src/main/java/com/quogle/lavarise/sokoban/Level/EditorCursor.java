@@ -3,9 +3,8 @@ package com.quogle.lavarise.sokoban.Level;
 import com.quogle.lavarise.client.sokoban.Animations.AnimationManager;
 import com.quogle.lavarise.client.sokoban.Animations.NoAnimationManager;
 import com.quogle.lavarise.sokoban.*;
-import com.quogle.lavarise.sokoban.Entities.Box;
-import com.quogle.lavarise.sokoban.Entities.Player;
-import com.quogle.lavarise.sokoban.Entities.Snail;
+import com.quogle.lavarise.sokoban.Entities.*;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Tiles.ArrowTile;
 import com.quogle.lavarise.sokoban.Tiles.ExitTile;
 
@@ -97,24 +96,18 @@ public class EditorCursor extends Entity {
         Tile tile = level.getTile(getX(), getY());
         if (tile == null) return;
 
-        switch (type) {
-            case PLAYER -> {
-                AnimationManager anim = new AnimationManager();
-                Player p = new Player(getX(), getY(), anim, getType(), level);
-                level.addPlayer(p);   // add player to player list
-                tile.setEntity(null); // clear any box or entity on tile
-            }
-            case BOX -> {
-                Box b = new Box(getX(), getY(), getType(), level);
-                level.addBox(b);
-                tile.setEntity(b);    // normal box placement
-            }
-            case SNAIL -> {
-                AnimationManager anim = new AnimationManager();
-                Snail s = new Snail(getX(), getY(), dir, anim, getType(), level);
-                level.addSnail(s);
-                tile.setEntity(s);
-            }
+        Entity e = switch (type) {
+            case PLAYER -> new Player(getX(), getY(), new AnimationManager(), type, level);
+            case BOX -> new Box(getX(), getY(), type, level);
+            case SNAIL -> new Snail(getX(), getY(), dir, new AnimationManager(), type, level);
+            case MOLE -> new Mole(getX(), getY(), new AnimationManager(), type, level);
+            case CURSOR -> new Cursor(new AnimationManager(), type, level);
+            default -> null;
+        };
+
+        if (e != null) {
+            level.addEntity(e); // unified list
+            tile.setEntity(e);  // set on the tile
         }
     }
 
@@ -133,9 +126,5 @@ public class EditorCursor extends Entity {
     public void removeEntity() {
         Tile t = level.getTile(getX(), getY());
         if (t != null) t.setEntity(null);
-    }
-    @Override
-    public EntityType getType() {
-        return EntityType.PLAYER;
     }
 }
