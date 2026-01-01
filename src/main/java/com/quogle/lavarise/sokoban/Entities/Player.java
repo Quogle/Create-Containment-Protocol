@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
+import static com.quogle.lavarise.sokoban.TileType.CRACKED;
 import static com.quogle.lavarise.sokoban.TileType.VOID;
 
 public class Player extends Entity {
@@ -35,10 +36,10 @@ public class Player extends Entity {
     }
 
     private void initAnimations() {
-        getAnimationManager().add("idle_front", AnimationAssets.IDLE_FRONT, 40, true);
-        getAnimationManager().add("idle_back", AnimationAssets.IDLE_BACK, 40, true);
-        getAnimationManager().add("idle_left", AnimationAssets.IDLE_LEFT, 40, true);
-        getAnimationManager().add("idle_right", AnimationAssets.IDLE_RIGHT, 40, true);
+        getAnimationManager().addIdle("idle_front", AnimationAssets.IDLE_FRONT, true);
+        getAnimationManager().addIdle("idle_back", AnimationAssets.IDLE_BACK, true);
+        getAnimationManager().addIdle("idle_left", AnimationAssets.IDLE_LEFT, true);
+        getAnimationManager().addIdle("idle_right", AnimationAssets.IDLE_RIGHT, true);
 
         getAnimationManager().add("push_front", AnimationAssets.FRONT_PUSH, AnimationAssets.PUSH_DURATIONS, false);
         getAnimationManager().add("push_back", AnimationAssets.BACK_PUSH, AnimationAssets.PUSH_DURATIONS, false);
@@ -98,7 +99,6 @@ public class Player extends Entity {
         targetTile.setEntity(this);
 
         moved = true;
-        onPlayerMove(level);
         }
         // Anything else -> blocked
         else {
@@ -113,6 +113,8 @@ public class Player extends Entity {
         // Always move ice entities after player/push
         moveIceEntities(level, pushedEntity);
         // Always handle void entities at the end
+        level.handleFireEntities();
+        level.handleWaterTile();
         level.handleVoidEntities();
         // Trigger any post-move effects
         onPlayerMove(level);
@@ -162,7 +164,7 @@ public class Player extends Entity {
         if (targetTile == null) return; // out of bounds
         level.addHudProperty(this, selectedTile.getType()); //if BASIC is selected update HUD
 
-        for (Property prop : propertiesFromTileType(selectedTile)) {
+        for (Anomaly prop : propertiesFromTileType(selectedTile)) {
             if (!prop.isTransferable()) continue; // skip SELECTABLE
             if (targetTile.hasEntity()) {
                 targetTile.getEntity().clearProperties();
@@ -170,11 +172,11 @@ public class Player extends Entity {
             } else {
                 targetTile.clearProperties();
                 targetTile.addProperty(prop);
-                targetTile.removeProperty(Property.NONE);
+                targetTile.removeProperty(Anomaly.NONE);
             }
             Tile firstBasic = level.getFirstBasicSelectableTile();
             if (selectedTile.getType() != TileType.BASIC) {
-                selectedTile.removeProperty(Property.SELECTABLE);
+                selectedTile.removeProperty(Anomaly.SELECTABLE);
                 selectedTile.setType(TileType.BLANK);
                 if (firstBasic != null) {
                     level.moveCursorTo(firstBasic);  // you add this method (2 lines below)
@@ -192,9 +194,21 @@ public class Player extends Entity {
         int width = level.getWidth();
         int height = level.getHeight();
 
+        level.resetCollisionTiles();
+        level.markCollisionTiles();
+
         Tile playerTile = level.getTile(getX(), getY());
+
+        if (playerTile.hasProperty(Anomaly.FIRE)) {
+            if (playerTile.getType() == TileType.CRACKED) {
+                playerTile.setType(VOID);
+            } else {
+                playerTile.setType(CRACKED);
+            }
+        }
+
         if (playerTile != previousTile) {
-            if (previousTile.getType() == TileType.CRACKED && !previousTile.hasProperty(Property.ICE)) {
+            if (previousTile.getType() == TileType.CRACKED && !previousTile.hasProperty(Anomaly.ICE)) {
                 previousTile.setType(VOID);
             }
         }
@@ -210,7 +224,7 @@ public class Player extends Entity {
         }
 
         //stage all property transfers
-        Map<Tile, List<Property>> staged = new HashMap<>();
+        Map<Tile, List<Anomaly>> staged = new HashMap<>();
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -218,7 +232,7 @@ public class Player extends Entity {
                 if (t instanceof ArrowTile arrow) {
 
                     // Collect transferable properties
-                    List<Property> props = arrow.collectTransferableProperties();
+                    List<Anomaly> props = arrow.collectTransferableProperties();
                     if (props.isEmpty()) continue;
 
                     //get target tile
@@ -233,29 +247,33 @@ public class Player extends Entity {
                     staged.computeIfAbsent(target, k -> new ArrayList<>()).addAll(props);
 
                     // Remove transferable properties from sender arrow immediately
-                    arrow.getProperties().removeIf(Property::isTransferable);
+                    arrow.getProperties().removeIf(Anomaly::isTransferable);
                 }
             }
         }
 
         //apply all staged properties
-        for (Map.Entry<Tile, List<Property>> entry : staged.entrySet()) {
+        for (Map.Entry<Tile, List<Anomaly>> entry : staged.entrySet()) {
             Tile target = entry.getKey();
-            List<Property> properties = entry.getValue();
+            List<Anomaly> properties = entry.getValue();
 
             // Replace target's properties with only incoming ones
             target.clearProperties();
-            for (Property p : properties) {
+            for (Anomaly p : properties) {
                 target.addProperty(p);
             }
         }
         level.getEntities().stream()
                 .filter(e -> e instanceof Snail)
                 .map(e -> (Snail) e)
-                .forEach(s -> s.moveOneStep(level));
+                .forEach(s -> {
+                    s.moveOneStep(level);
+                    level.handleCollision(); // handle collisions immediately after each move
+                });
     }
 
-    private void setIdleOrPushState(int dx, int dy, boolean pushing) {
+
+        private void setIdleOrPushState(int dx, int dy, boolean pushing) {
         PlayerState newState;
 
         if (pushing) {
@@ -303,14 +321,14 @@ public class Player extends Entity {
     }
 
     //Maps selectable cursor tiles to which property they transfer
-    private Property[] propertiesFromTileType(Tile tile) {
+    private Anomaly[] propertiesFromTileType(Tile tile) {
         return switch (tile.getType()) {
-            case BASIC -> new Property[]{Property.NONE};
-            case FIRE -> new Property[]{ Property.FIRE };
-            case ICE  -> new Property[]{ Property.ICE };
-            case WATER -> new Property[]{ Property.WATER };
-            case ROTATE -> new Property[]{ Property.ROTATE };
-            default -> tile.getProperties().toArray(new Property[0]); // fallback to actual properties
+            case BASIC -> new Anomaly[]{Anomaly.NONE};
+            case FIRE -> new Anomaly[]{ Anomaly.FIRE };
+            case ICE  -> new Anomaly[]{ Anomaly.ICE };
+            case WATER -> new Anomaly[]{ Anomaly.WATER };
+            case ROTATE -> new Anomaly[]{ Anomaly.ROTATE };
+            default -> tile.getProperties().toArray(new Anomaly[0]); // fallback to actual properties
         };
     }
 
@@ -340,7 +358,7 @@ public class Player extends Entity {
         Tile currentTile = level.getTile(entity.getX(), entity.getY());
 
         // --- ROTATE PUSH DIRECTION IF THE ROCK IS STANDING ON A ROTATE TILE ---
-        if (currentTile.hasProperty(Property.ROTATE)) {
+        if (currentTile.hasProperty(Anomaly.ROTATE)) {
             int rotatedDx = -dy;
             int rotatedDy = dx;
 
@@ -349,7 +367,7 @@ public class Player extends Entity {
         }
 
         // If the rock has ICE property, update its slide direction to the NEW direction
-        if (entity.hasProperty(Property.ICE)) {
+        if (entity.hasProperty(Anomaly.ICE)) {
             entity.setSlideDirection(dx, dy);
         }
 
@@ -372,18 +390,18 @@ public class Player extends Entity {
             entityTargetTile.setEntity(entity);
             entity.setPosition(entityNewX, entityNewY);
 
-            // --- BREAK CRACKED TILE WE ARE LEAVING ---
-            if (currentTile.getType() == TileType.CRACKED && !currentTile.hasProperty(Property.ICE)) {
+            // BREAK CRACKED TILE PLAYERS LEAVING
+            if (currentTile.getType() == TileType.CRACKED && !currentTile.hasProperty(Anomaly.ICE)) {
                 currentTile.setType(VOID);
             }
 
-            // --- ROTATE AGAIN IF THE TARGET TILE HAS ROTATE ---
-            if (entityTargetTile.hasProperty(Property.ROTATE)) {
+            // ROTATE AGAIN IF THE TARGET TILE HAS ROTATE
+            if (entityTargetTile.hasProperty(Anomaly.ROTATE)) {
                 int rotatedDx = -dy;
                 int rotatedDy = dx;
                 entity.setSlideDirection(rotatedDx, rotatedDy);
             }
-            else if (!entity.hasProperty(Property.ICE)) {
+            else if (!entity.hasProperty(Anomaly.ICE)) {
                 entity.clearSlide();
             }
 
@@ -396,7 +414,7 @@ public class Player extends Entity {
     private void moveIceEntities(Level level, Entity skipEntity) {
         for (Entity entity : level.getEntities()) {
             if (entity == skipEntity) continue;
-            if (!(entity.hasProperty(Property.ICE) && (entity.getSlideDx() != 0 || entity.getSlideDy() != 0))) continue;
+            if (!(entity.hasProperty(Anomaly.ICE) && (entity.getSlideDx() != 0 || entity.getSlideDy() != 0))) continue;
 
             int dx = entity.getSlideDx();
             int dy = entity.getSlideDy();
@@ -420,8 +438,8 @@ public class Player extends Entity {
                 continue;
             }
 
-            // --- BREAK CRACKED TILE WE ARE LEAVING ---
-            if (currentTile.getType() == TileType.CRACKED && !currentTile.hasProperty(Property.ICE)) {
+            //BREAK CRACKED TILE ENTITIES ARE LEAVING
+            if (currentTile.getType() == TileType.CRACKED && !currentTile.hasProperty(Anomaly.ICE)) {
                 currentTile.setType(VOID);
             }
 
@@ -434,7 +452,7 @@ public class Player extends Entity {
             entity.setPosition(newX, newY);
 
             // Handle ROTATE property
-            if (targetTile.hasProperty(Property.ROTATE)) {
+            if (targetTile.hasProperty(Anomaly.ROTATE)) {
                 int rotatedDx = -dy;
                 int rotatedDy = dx;
                 entity.setSlideDirection(rotatedDx, rotatedDy);

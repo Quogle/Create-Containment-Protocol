@@ -1,8 +1,13 @@
 package com.quogle.lavarise.client.sokoban.Animations;
 
+import com.quogle.lavarise.sokoban.Level.Level;
 import net.minecraft.resources.ResourceLocation;
 
 public class NoAnimationManager extends AnimationManager {
+
+    public NoAnimationManager(Level level) {
+        super(level);
+    }
 
     @Override
     public void tickAll() {

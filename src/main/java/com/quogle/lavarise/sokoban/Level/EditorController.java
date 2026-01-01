@@ -3,19 +3,20 @@ package com.quogle.lavarise.sokoban.Level;
 import com.quogle.lavarise.sokoban.*;
 import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import org.lwjgl.glfw.GLFW;
+import com.quogle.lavarise.sokoban.*;
+import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
+import org.lwjgl.glfw.GLFW;
 
 public class EditorController {
     private final Level level;
     private EditorTab activeTab = EditorTab.TILE; // default
     private final EditorCursor editorCursor;
     private TileType selectedTileType = TileType.FLOOR;
-    private Property selectedProperty = Property.FIRE;
+    private Anomaly selectedProperty = Anomaly.FIRE;
     private EntityType selectedEntityType = EntityType.PLAYER;
-    private EntityType selectedMisc = EntityType.CURSOR;// default
+    private Object selectedMisc = EntityType.CURSOR;// default
     private Direction selectedTileDirection = Direction.RIGHT;
     private Direction selectedEntityDirection = Direction.DOWN;// default for preview
-
-
 
     public EditorController(Level level) {
         this.level = level;
@@ -41,15 +42,23 @@ public class EditorController {
     public TileType getSelectedTileType() {
         return selectedTileType;
     }
+
     public Direction getSelectedTileDirection() {
         return selectedTileDirection;
     }
-    public EntityType getSelectedEntityType() { return selectedEntityType;}
-    public EntityType getSelectedMisc() { return selectedMisc;}
 
-    public Property getSelectedProperty() {
+    public EntityType getSelectedEntityType() {
+        return selectedEntityType;
+    }
+
+    public Object getSelectedMisc() {
+        return selectedMisc;
+    }
+
+    public Anomaly getSelectedProperty() {
         return selectedProperty;
     }
+
     public Direction getSelectedEntityDirection() {
         return selectedEntityDirection;
     }
@@ -61,10 +70,10 @@ public class EditorController {
                 case 2 -> TileType.WALL;
                 case 3 -> TileType.VOID;
                 case 4 -> TileType.EXIT;
-                case 5 -> TileType.IMPRINT;
+                case 5 -> TileType.BUTTON;
                 case 6 -> TileType.ARROW;
                 case 7 -> TileType.CRACKED;
-
+                case 8 -> TileType.IMPRINT;
                 default -> selectedTileType;
             };
             case ENTITY -> selectedEntityType = switch (number) {
@@ -74,16 +83,16 @@ public class EditorController {
                 case 4 -> EntityType.MOLE;
                 default -> selectedEntityType;
             };
-
             case PROPERTY -> selectedProperty = switch (number) {
-                case 1 -> Property.FIRE;
-                case 2 -> Property.ICE;
-                case 3 -> Property.ROTATE;
-                case 4 -> Property.WATER;
+                case 1 -> Anomaly.FIRE;
+                case 2 -> Anomaly.ICE;
+                case 3 -> Anomaly.ROTATE;
+                case 4 -> Anomaly.WATER;
                 default -> selectedProperty;
             };
             case MISC -> selectedMisc = switch (number) {
                 case 1 -> EntityType.CURSOR;
+                case 2 -> TileType.NUMBER;
                 default -> selectedMisc;
             };
         }
@@ -98,26 +107,30 @@ public class EditorController {
         } else if (activeTab == EditorTab.PROPERTY) {
             editorCursor.clearProperties();
             editorCursor.addProperty(selectedProperty);
-        }
-        else if (activeTab == EditorTab.MISC) {
-            editorCursor.clearEntities();
-            editorCursor.placeEntity(selectedMisc, selectedEntityDirection);
+        } else if (activeTab == EditorTab.MISC) {
+            if (selectedMisc instanceof EntityType entityType) {
+                editorCursor.clearEntities();
+                editorCursor.placeEntity(entityType, selectedEntityDirection);
+            } else if (selectedMisc instanceof TileType tileType) {
+                editorCursor.placeTile(tileType, selectedTileDirection);
+            }
         }
     }
 
     private void rotateSelected() {
-        if (activeTab == EditorTab.TILE) {
-            if (selectedTileType.canRotate()) {
-                selectedTileDirection = selectedTileDirection.nextClockwise();
-            }
-        } else if (activeTab == EditorTab.ENTITY) {
-            if (selectedEntityType.canRotate()) {
-                selectedEntityDirection = selectedEntityDirection.nextClockwise();
-            }
+        if (activeTab == EditorTab.TILE && selectedTileType.canRotate()) {
+            selectedTileDirection = selectedTileDirection.nextClockwise();
+        }
+        if (activeTab == EditorTab.ENTITY && selectedEntityType.canRotate()) {
+            selectedEntityDirection = selectedEntityDirection.nextClockwise();
         }
     }
 
-    public Level handleKeyPress(int keyCode, boolean isZHeld) {
+    private void deleteSelected() {
+        editorCursor.clearEntities();
+    }
+
+    public Level handleKeyPress(int keyCode, boolean isZHeld, boolean isCHeld) {
         Level loadedLevel = null;
 
         switch (keyCode) {
@@ -134,20 +147,27 @@ public class EditorController {
             case GLFW.GLFW_KEY_A -> selectEditorItem(6);
             case GLFW.GLFW_KEY_S -> selectEditorItem(7);
 
-
-
             case GLFW.GLFW_KEY_Z -> placeSelectedItem();
             case GLFW.GLFW_KEY_X -> rotateSelected();
+            case GLFW.GLFW_KEY_C -> deleteSelected();
 
-            case GLFW.GLFW_KEY_LEFT -> moveCursor(-1, 0, isZHeld);
-            case GLFW.GLFW_KEY_RIGHT -> moveCursor(1, 0, isZHeld);
-            case GLFW.GLFW_KEY_UP -> moveCursor(0, -1, isZHeld);
-            case GLFW.GLFW_KEY_DOWN -> moveCursor(0, 1, isZHeld);
+            case GLFW.GLFW_KEY_LEFT -> moveCursor(-1, 0, isZHeld, isCHeld);
+            case GLFW.GLFW_KEY_RIGHT -> moveCursor(1, 0, isZHeld, isCHeld);
+            case GLFW.GLFW_KEY_UP -> moveCursor(0, -1, isZHeld, isCHeld);
+            case GLFW.GLFW_KEY_DOWN -> moveCursor(0, 1, isZHeld, isCHeld);
 
             case GLFW.GLFW_KEY_K -> saveLevel("saved_level.json");
             case GLFW.GLFW_KEY_L -> loadedLevel = loadLevel("saved_level.json");
         }
+
         return loadedLevel;
+    }
+
+    public void moveCursor(int dx, int dy, boolean isZHeld, boolean isCHeld) {
+        editorCursor.move(dx, dy, false); // move without auto-place
+
+        if (isZHeld) placeSelectedItem();
+        if (isCHeld) deleteSelected();
     }
 
     public void saveLevel(String filename) {
@@ -157,7 +177,6 @@ public class EditorController {
         }
     }
 
-
     public Level loadLevel(String filename) {
         Level loaded = Level.loadFromFile(filename);
         if (loaded != null) {
@@ -165,10 +184,5 @@ public class EditorController {
             return loaded;
         }
         return null;
-    }
-
-
-    public void moveCursor(int dx, int dy, boolean isZHeld) {
-        editorCursor.move(dx, dy, isZHeld);
     }
 }

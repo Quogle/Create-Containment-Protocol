@@ -13,10 +13,11 @@ public class Tile {
     private final int x, y;
     private TileType type;          // WALL, FLOOR, SPIKES, etc.
     private Level level;
-    private final Set<Property> properties = new HashSet<>();
+    private final Set<Anomaly> anomalies = new HashSet<>();
     private Entity entity = null;
     private boolean canRotate = false;
     private Mole mole;
+    private TileState state = TileState.NONE; // <-- new
 
 
     // Only set in tiles that actually use direction
@@ -43,25 +44,30 @@ public class Tile {
 
 
 
-    public boolean hasProperty(Property property) {
-        return properties.contains(property);
+    public boolean hasProperty(Anomaly property) {
+        return anomalies.contains(property);
     }
 
-    public Tile addProperty(Property property) {
-        properties.add(property);
+    public Tile addProperty(Anomaly property) {
+        anomalies.add(property);
         return this;
     }
-    public Tile removeProperty(Property property) {
-        properties.remove(property);
+    public Tile setProperties(Anomaly property) {
+        anomalies.add(property);
         return this;
     }
 
-    public Set<Property> getProperties() {
-        return properties;
+    public Tile removeProperty(Anomaly property) {
+        anomalies.remove(property);
+        return this;
+    }
+
+    public Set<Anomaly> getProperties() {
+        return anomalies;
     }
     public Tile clearProperties() {
         // Remove only transferable properties
-        properties.removeIf(Property::isTransferable);
+        anomalies.removeIf(Anomaly::isTransferable);
         return this;
     }
 
@@ -93,6 +99,10 @@ public class Tile {
         }
         this.entity = newEntity; // all other normal entities
     }
+
+    public TileState getState() { return state; }
+    public void setState(TileState newState) { this.state = newState; }
+    public boolean isLethal() { return state == TileState.LETHAL; }
 
 
     public boolean hasNonMoleEntity() {

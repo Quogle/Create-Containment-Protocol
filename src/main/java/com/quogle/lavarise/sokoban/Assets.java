@@ -10,6 +10,9 @@ public class Assets {
     // TILES
     public static final ResourceLocation WALL   = rl("textures/gui/sokoban/tiles/wall.png");
     public static final ResourceLocation FLOOR  = rl("textures/gui/sokoban/tiles/floor.png");
+    public static final ResourceLocation EXIT_ACTIVE = rl("textures/gui/sokoban/tiles/exit.png");
+    public static final ResourceLocation EXIT_INACTIVE = rl("textures/gui/sokoban/tiles/exit_closed.png");
+    public static final ResourceLocation BUTTON = rl("textures/gui/sokoban/tiles/button.png");
     public static final ResourceLocation CRACKED  = rl("textures/gui/sokoban/tiles/cracked.png");
     public static final ResourceLocation VOID   = rl("textures/gui/sokoban/tiles/void.png");
     public static final ResourceLocation IMPRINT   = rl("textures/gui/sokoban/tiles/imprint.png");
@@ -32,7 +35,6 @@ public class Assets {
     public static final ResourceLocation ARROW_UP2    = rl("textures/gui/sokoban/tiles/arrow_up2.png");
     public static final ResourceLocation ARROW_DOWN1  = rl("textures/gui/sokoban/tiles/arrow_down1.png");
     public static final ResourceLocation ARROW_DOWN2  = rl("textures/gui/sokoban/tiles/arrow_down2.png");
-    public static final ResourceLocation EXIT = rl("textures/gui/sokoban/tiles/exit.png");;
 
 
     // ENTITIES
@@ -53,6 +55,33 @@ public class Assets {
     public static final ResourceLocation ROTATE_PREV   = rl("textures/gui/sokoban/tiles/rotate_prev.png");
     public static final ResourceLocation ICE_PREV    = rl("textures/gui/sokoban/tiles/ice_prev.png");
     public static final ResourceLocation WATER_PREV  = rl("textures/gui/sokoban/tiles/water_prev.png");
+
+
+    //FONT
+    public static final ResourceLocation[] NUMBER_DIGITS = new ResourceLocation[]{
+            rl("textures/gui/sokoban/tiles/numbers/0.png"),
+            rl("textures/gui/sokoban/tiles/numbers/1.png"),
+            rl("textures/gui/sokoban/tiles/numbers/2.png"),
+            rl("textures/gui/sokoban/tiles/numbers/3.png"),
+            rl("textures/gui/sokoban/tiles/numbers/4.png"),
+            rl("textures/gui/sokoban/tiles/numbers/5.png"),
+            rl("textures/gui/sokoban/tiles/numbers/6.png"),
+            rl("textures/gui/sokoban/tiles/numbers/7.png"),
+            rl("textures/gui/sokoban/tiles/numbers/8.png"),
+            rl("textures/gui/sokoban/tiles/numbers/9.png")
+    };
+    public static final ResourceLocation[] NUMBER_DIGITS_RIGHT = new ResourceLocation[]{
+            rl("textures/gui/sokoban/tiles/numbers/0r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/1r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/2r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/3r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/4r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/5r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/6r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/7r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/8r.png"),
+            rl("textures/gui/sokoban/tiles/numbers/9r.png")
+    };
 
     //MISC
     public static final ResourceLocation ROTATE_OVERLAY = rl("textures/gui/sokoban/tiles/rotate_overlay.png");

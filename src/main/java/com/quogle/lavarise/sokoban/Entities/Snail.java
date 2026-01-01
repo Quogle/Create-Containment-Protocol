@@ -15,14 +15,14 @@ import net.minecraft.resources.ResourceLocation;
 import static com.quogle.lavarise.sokoban.TileType.VOID;
 
 public class Snail extends Entity implements Rotatable {
-    private Direction direction;
-    private Property property;
+    private boolean canCollide = false;
+    private Anomaly property;
     Tile previousTile;
     //Constructor
     public Snail(int x, int y, Direction dir, AnimationManager animManager, EntityType entityType, Level level) {
         super(x, y, entityType, animManager);
         this.stateMachine = new StateMachine(SnailState.SNAIL_LEFT);
-        this.direction = dir;
+        setDirection(dir);
         this.previousTile = level.getTile(getX(),getY());
         initAnimations();
         updateVisualDirection();
@@ -32,15 +32,17 @@ public class Snail extends Entity implements Rotatable {
     public void moveOneStep(Level level) {
         Tile currentTile = level.getTile(getX(), getY());
 
+        System.out.println("SNAIL MOVCE!!!!!");
+
         // Check if frozen (on ice)
         if (this.isFrozen()) {
             applyTileEffects(currentTile);
             return; // skip movement entirely
         }
 
-        //get new tile based on direction player is facing
-        int newX = getX() + direction.dx;
-        int newY = getY() + direction.dy;
+        //get new tile based on direction they is facing
+        int newX = getX() + getDirection().dx;
+        int newY = getY() + getDirection().dy;
 
         // Check level bounds
         if (newX < 0 || newX >= level.getWidth() || newY < 0 || newY >= level.getHeight()) {
@@ -62,7 +64,7 @@ public class Snail extends Entity implements Rotatable {
             targetTile.setEntity(this);
 
             Tile newCurrentTile = level.getTile(getX(), getY());
-            if(newCurrentTile != previousTile && !previousTile.hasProperty(Property.ICE)) {
+            if(newCurrentTile != previousTile && !previousTile.hasProperty(Anomaly.ICE)) {
                 if(previousTile.getType() == TileType.CRACKED) {
                     previousTile.setType(VOID);
                 }
@@ -77,22 +79,23 @@ public class Snail extends Entity implements Rotatable {
 
     //Turn snail 180 degrees, called when it's movement gets blocked.
     private void turnAround() {
-        switch (direction) {
-            case UP -> direction = Direction.DOWN;
-            case DOWN -> direction = Direction.UP;
-            case LEFT -> direction = Direction.RIGHT;
-            case RIGHT -> direction = Direction.LEFT;
-        }
+        setDirection(switch (getDirection()) {
+            case UP -> Direction.DOWN;
+            case DOWN -> Direction.UP;
+            case LEFT -> Direction.RIGHT;
+            case RIGHT -> Direction.LEFT;
+            default -> Direction.NONE;
+        });
         updateVisualDirection();
     }
 
     //apply Tile properties to snail
     private void applyTileEffects(Tile tile) {
-        if (tile.hasProperty(Property.ROTATE)) {
-            this.direction = this.direction.nextClockwise();
+        if (tile.hasProperty(Anomaly.ROTATE)) {
+            this.setDirection(this.getDirection().nextClockwise());
             updateVisualDirection();
         }
-        if (tile.hasProperty(Property.ICE)) {
+        if (tile.hasProperty(Anomaly.ICE)) {
             this.setFrozen(true);
             this.setPushableOverride(true);
         }
@@ -109,32 +112,30 @@ public class Snail extends Entity implements Rotatable {
 
     @Override
     public void rotateClockwise() {
-        direction = switch (direction) {
-            case UP -> Direction.RIGHT;
-            case RIGHT -> Direction.DOWN;
-            case DOWN -> Direction.LEFT;
-            case LEFT -> Direction.UP;
-        };
+        setDirection(getDirection().nextClockwise());
         updateVisualDirection();
     }
 
     //Preview for Editor
     @Override
     public ResourceLocation getPreview(Direction dir) {
-        return switch(dir) {
+        Direction actualDir = dir != null ? dir : getDirection();
+        return switch (actualDir) {
             case UP -> Assets.SNAIL_UP;
             case DOWN -> Assets.SNAIL_DOWN;
             case LEFT -> Assets.SNAIL_LEFT;
             case RIGHT -> Assets.SNAIL_RIGHT;
+            default -> Assets.SNAIL_UP; // fallback for NONE
         };
     }
 
 
+
     private void initAnimations() {
-        getAnimationManager().add("idle_left", AnimationAssets.SNAIL_LEFT, 40, true);
-        getAnimationManager().add("idle_right", AnimationAssets.SNAIL_RIGHT, 40, true);
-        getAnimationManager().add("idle_up", AnimationAssets.SNAIL_UP, 40, true);
-        getAnimationManager().add("idle_down", AnimationAssets.SNAIL_DOWN, 40, true);
+        getAnimationManager().addIdle("idle_left", AnimationAssets.SNAIL_LEFT, true);
+        getAnimationManager().addIdle("idle_right", AnimationAssets.SNAIL_RIGHT, true);
+        getAnimationManager().addIdle("idle_up", AnimationAssets.SNAIL_UP, true);
+        getAnimationManager().addIdle("idle_down", AnimationAssets.SNAIL_DOWN, true);
     }
 
     public void render(GuiGraphics guiGraphics, int offsetX, int offsetY, int tileSize) {
@@ -145,13 +146,13 @@ public class Snail extends Entity implements Rotatable {
     }
 
     private void updateVisualDirection() {
-        switch (direction) {
+        switch (getDirection()) {
             case UP -> stateMachine.setState(SnailState.SNAIL_UP);
             case DOWN -> stateMachine.setState(SnailState.SNAIL_DOWN);
             case LEFT -> stateMachine.setState(SnailState.SNAIL_LEFT);
             case RIGHT -> stateMachine.setState(SnailState.SNAIL_RIGHT);
+            default -> {} // NONE does nothing
         }
-        // Reset animation so it starts from first frame
         getAnimationManager().get(stateMachine.getState().getAnimKey()).reset();
     }
 
@@ -159,9 +160,6 @@ public class Snail extends Entity implements Rotatable {
     public String getCurrentAnimationKey() {
         return stateMachine.getState().getAnimKey();
     }
-
-    @Override
-    public Direction getDirection() { return direction; }
 
     //Animation Getters
     public SnailState getCurrentState() {

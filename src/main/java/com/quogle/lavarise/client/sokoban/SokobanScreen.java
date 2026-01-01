@@ -8,7 +8,9 @@ import com.quogle.lavarise.sokoban.Entities.Cursor;
 import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Level.*;
 import com.quogle.lavarise.sokoban.Tiles.ArrowTile;
+import com.quogle.lavarise.sokoban.Tiles.ButtonTile;
 import com.quogle.lavarise.sokoban.Tiles.ExitTile;
+import com.quogle.lavarise.sokoban.Tiles.FloorNumTile;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -31,7 +33,7 @@ public class SokobanScreen extends Screen {
     private EditorCursor editorCursor;
     private boolean isZHeld = false;
 
-    private final AnimationManager animManager = new AnimationManager();
+    private AnimationManager animManager;
 
     //track held keys for free move
     private final Set<Integer> keysHeld = new HashSet<>();
@@ -45,6 +47,7 @@ public class SokobanScreen extends Screen {
         currentLevel = LevelBuilder.createExampleLevel();
         editorController = new EditorController(currentLevel);
         editorMode = false;
+        animManager = new AnimationManager(currentLevel);
     }
 
     @Override
@@ -60,13 +63,10 @@ public class SokobanScreen extends Screen {
 
         // Editor controls
         if (editorMode) {
-            if (keyCode == GLFW.GLFW_KEY_Z) {
-                isZHeld = true;
-                editorController.placeSelectedItem();
-                return true;
-            }
+            boolean isZHeld = keysHeld.contains(GLFW.GLFW_KEY_Z);
+            boolean isCHeld = keysHeld.contains(GLFW.GLFW_KEY_C);
 
-            Level loaded = editorController.handleKeyPress(keyCode, isZHeld);
+            Level loaded = editorController.handleKeyPress(keyCode, isZHeld, isCHeld);
             if (loaded != null) {
                 currentLevel = loaded;
                 editorController = new EditorController(currentLevel);
@@ -96,6 +96,8 @@ public class SokobanScreen extends Screen {
                         }
                     }
                 }
+                case GLFW.GLFW_KEY_R -> currentLevel.resetLevel();
+                case GLFW.GLFW_KEY_F -> currentLevel.advanceFloor();
             }
         }
 
@@ -105,11 +107,10 @@ public class SokobanScreen extends Screen {
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
         keysHeld.remove(keyCode);
-
-        if (keyCode == GLFW.GLFW_KEY_Z) isZHeld = false;
-
+        // nothing extra needed since handleKeyPress checks keysHeld every tick
         return super.keyReleased(keyCode, scanCode, modifiers);
     }
+
 
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
@@ -142,37 +143,33 @@ public class SokobanScreen extends Screen {
                     case WATER -> Assets.WATER;
                     case BASIC -> Assets.BASIC;
                     case FL -> Assets.FL;
-                    case NUMBER -> Assets.NUMBER;
                     default -> Assets.VOID;
                 };
 
                 if (tile instanceof ArrowTile arrowTile) tileTexture = arrowTile.getCurrentFrame();
                 if (tile instanceof ExitTile exitTile) tileTexture = exitTile.getSprite();
+                if (tile instanceof ButtonTile buttonTile) tileTexture = buttonTile.getSprite();
+
+                if (tile instanceof FloorNumTile numTile) {
+                    ResourceLocation bg = numTile.getBackground();
+                    ResourceLocation left = numTile.getLeftDigit();
+                    ResourceLocation right = numTile.getRightDigit();
+
+                    guiGraphics.blit(bg, drawX, drawY, 0, 0, dynamicTileSize, dynamicTileSize, dynamicTileSize, dynamicTileSize);
+                    guiGraphics.blit(left, drawX, drawY, 0, 0, dynamicTileSize, dynamicTileSize, dynamicTileSize, dynamicTileSize);
+                    guiGraphics.blit(right, drawX, drawY, 0, 0, dynamicTileSize, dynamicTileSize, dynamicTileSize, dynamicTileSize);
+                } else {
+                    guiGraphics.blit(tileTexture, drawX, drawY, 0, 0, dynamicTileSize, dynamicTileSize, dynamicTileSize, dynamicTileSize);
+                }
+
 
                 //Tile shader color
-                if (tile.hasProperty(Property.FIRE)) RenderSystem.setShaderColor(1f, 0f, 0f, 1f);
-                else if (tile.hasProperty(Property.ICE)) RenderSystem.setShaderColor(0.5f, 0.9f, 1.0f, 1f);
-                else if (tile.hasProperty(Property.WATER)) RenderSystem.setShaderColor(0.5f, 0.5f, 1f, 1f);
-                else if (tile.hasProperty(Property.ROTATE)) RenderSystem.setShaderColor(1.0f, 0.53f, 1.0f, 1f);
+                if (tile.hasProperty(Anomaly.FIRE)) RenderSystem.setShaderColor(1f, 0f, 0f, 1f);
+                else if (tile.hasProperty(Anomaly.ICE)) RenderSystem.setShaderColor(0.5f, 0.9f, 1.0f, 1f);
+                else if (tile.hasProperty(Anomaly.WATER)) RenderSystem.setShaderColor(0.5f, 0.5f, 1f, 1f);
+                else if (tile.hasProperty(Anomaly.ROTATE)) RenderSystem.setShaderColor(1.0f, 0.53f, 1.0f, 1f);
                 else RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-
-                guiGraphics.blit(tileTexture, drawX, drawY, 0, 0, dynamicTileSize, dynamicTileSize,
-                        dynamicTileSize, dynamicTileSize);
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-            }
-        }
-
-        //player free move
-        if (currentLevel.isFreemove() && player != null) {
-            float dx = 0, dy = 0;
-            if (keysHeld.contains(GLFW.GLFW_KEY_LEFT)) dx -= 1;
-            if (keysHeld.contains(GLFW.GLFW_KEY_RIGHT)) dx += 1;
-            if (keysHeld.contains(GLFW.GLFW_KEY_UP)) dy -= 1;
-            if (keysHeld.contains(GLFW.GLFW_KEY_DOWN)) dy += 1;
-
-            if (dx != 0 || dy != 0) {
-                float deltaTime = 1 / 60f; // approximate, or pass actual delta from render
-                player.moveFree(dx, dy, currentLevel, deltaTime);
             }
         }
 
@@ -184,10 +181,6 @@ public class SokobanScreen extends Screen {
 
         //render entities
         for (Entity e : sorted) {
-            e.tickAnimations();
-            e.update(currentLevel); // advance animation frames
-
-
             Animation anim = e.getAnimationManager().get(e.getCurrentAnimationKey());
 
             float drawX = e.getX();
@@ -234,13 +227,18 @@ public class SokobanScreen extends Screen {
             Direction dir = editorController.getSelectedEntityDirection();
             return previewEntity.getPreview(dir); // Rotatable entities return rotated preview, others default
         } else if (editorController.getActiveTab() == EditorTab.PROPERTY) {
-            Property previewProperty = editorController.getSelectedProperty();
+            Anomaly previewProperty = editorController.getSelectedProperty();
             return previewProperty.getPreviewTexture();
         }
         else if (editorController.getActiveTab() == EditorTab.MISC) {
-            EntityType previewEntity = editorController.getSelectedMisc();
-            Direction dir = editorController.getSelectedEntityDirection();
-            return previewEntity.getPreview(dir);
+            Object misc = editorController.getSelectedMisc();
+            if (misc instanceof EntityType entityType) {
+                Direction dir = editorController.getSelectedEntityDirection();
+                return entityType.getPreview(dir);
+            } else if (misc instanceof TileType tileType) {
+                Direction dir = editorController.getSelectedTileDirection();
+                return tileType.getPreview(dir); // if you have a preview method for tiles
+            }
         }
         return null;
     }
@@ -250,8 +248,8 @@ public class SokobanScreen extends Screen {
         for (Entity e : currentLevel.getEntities()) {
             if (e instanceof Player p) {
                 p.move(dx, dy, currentLevel);
-                tryEnterExit(p);
-                enterVoid(p);
+                currentLevel.tryEnterExit(p);
+                currentLevel.enterVoid(p);
             }
         }
     }
@@ -261,40 +259,39 @@ public class SokobanScreen extends Screen {
         editorMode = true;
         editorCursor = new EditorCursor(currentLevel, editorController, EntityType.CURSOR);
     }
-    public void tryEnterExit(Player player) {
-        Tile tile = currentLevel.getTile(player.getX(), player.getY());
-        if (tile instanceof ExitTile) {
-            // Increase floor count
-            currentLevel.setCurrentFloor(currentLevel.getCurrentFloor() + 1);
 
-            // Build filename for next floor
-            String nextFile = currentLevel.getCurrentZone() + currentLevel.getCurrentFloor() + ".json";
-            System.out.println("Loading next level: " + nextFile);
-            Level nextLevel = Level.loadFromFile(nextFile);
+    @Override
+    public void tick() {
+        super.tick();
 
-            assert nextLevel != null;
-            nextLevel.setCurrentZone(currentLevel.currentZone);
-            nextLevel.setCurrentFloor(currentLevel.currentFloor);
+        if (currentLevel == null) return;
 
-            currentLevel = nextLevel;
-            editorController = new EditorController(currentLevel);
+        currentLevel.pressButton();
+        currentLevel.activateExit();
+        currentLevel.getEntities().stream()
+                .filter(e -> e instanceof Player)
+                .map(e -> (Player) e)
+                .forEach(p -> currentLevel.tryEnterExit(p));
+
+        // Tick entities ONCE per game tick (20 TPS)
+        for (Entity e : currentLevel.getEntities()) {
+            e.tickAnimations();
+            e.update(currentLevel);
         }
-    }
-    public void enterVoid(Player player) {
-        Tile tile = currentLevel.getTile(player.getX(), player.getY());
-        if (tile.getType() == TileType.VOID) {
 
-            // Build filename for next floor
-            String nextFile = currentLevel.getCurrentZone() + currentLevel.getCurrentFloor() + ".json";
-            System.out.println("Loading next level: " + nextFile);
-            Level nextLevel = Level.loadFromFile(nextFile);
+        // Free-move logic (tick-based, not render-based)
+        if (currentLevel.isFreemove() && player != null) {
+            float dx = 0, dy = 0;
 
-            assert nextLevel != null;
-            nextLevel.setCurrentZone(currentLevel.currentZone);
-            nextLevel.setCurrentFloor(currentLevel.currentFloor);
+            if (keysHeld.contains(GLFW.GLFW_KEY_LEFT)) dx -= 1;
+            if (keysHeld.contains(GLFW.GLFW_KEY_RIGHT)) dx += 1;
+            if (keysHeld.contains(GLFW.GLFW_KEY_UP)) dy -= 1;
+            if (keysHeld.contains(GLFW.GLFW_KEY_DOWN)) dy += 1;
 
-            currentLevel = nextLevel;
-            editorController = new EditorController(currentLevel);
+            if (dx != 0 || dy != 0) {
+                float speedPerTick = 0.1f; // tune this value
+                player.moveFree(dx, dy, currentLevel, speedPerTick);
+            }
         }
     }
 }

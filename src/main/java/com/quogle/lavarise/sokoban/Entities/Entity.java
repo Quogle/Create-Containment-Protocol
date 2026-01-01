@@ -8,7 +8,7 @@ import com.quogle.lavarise.sokoban.AnimatableState;
 import com.quogle.lavarise.sokoban.Direction;
 import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Level.Level;
-import com.quogle.lavarise.sokoban.Property;
+import com.quogle.lavarise.sokoban.Anomaly;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
@@ -16,10 +16,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Entity{
+    private Direction direction = Direction.NONE;
     private int x, y;
     private int slideDx = 0;
     private int slideDy = 0;
-    private final Set<Property> properties = new HashSet<>();
+    private final Set<Anomaly> properties = new HashSet<>();
     private final EntityType type;
 
     protected AnimationManager animationManager;
@@ -55,10 +56,10 @@ public class Entity{
 
     public void render(GuiGraphics guiGraphics, int offsetX, int offsetY, int tileSize, Animation anim, float posX, float posY) {
         // Set color based on properties
-        if (hasProperty(Property.FIRE)) RenderSystem.setShaderColor(1f, 0f, 0f, 1f);
-        else if (hasProperty(Property.ICE)) RenderSystem.setShaderColor(0.5f, 0.9f, 1f, 1f);
-        else if (hasProperty(Property.WATER)) RenderSystem.setShaderColor(0.5f, 0.5f, 1f, 1f);
-        else if (hasProperty(Property.ROTATE)) RenderSystem.setShaderColor(1f, 0.53f, 1f, 1f);
+        if (hasProperty(Anomaly.FIRE)) RenderSystem.setShaderColor(1f, 0f, 0f, 1f);
+        else if (hasProperty(Anomaly.ICE)) RenderSystem.setShaderColor(0.5f, 0.9f, 1f, 1f);
+        else if (hasProperty(Anomaly.WATER)) RenderSystem.setShaderColor(0.5f, 0.5f, 1f, 1f);
+        else if (hasProperty(Anomaly.ROTATE)) RenderSystem.setShaderColor(1f, 0.53f, 1f, 1f);
         else RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 
         guiGraphics.blit(anim.getCurrentFrame(),
@@ -102,11 +103,13 @@ public class Entity{
     public AnimationManager getAnimationManager() { return animationManager; }
 
     // --- Properties ---
-    public boolean hasProperty(Property p) { return properties.contains(p); }
-    public void addProperty(Property p) { properties.add(p); }
-    public void removeProperty(Property p) { properties.remove(p); }
-    public Set<Property> getProperties() { return properties; }
-    public void clearProperties() { properties.removeIf(Property::isTransferable); }
+    public boolean hasProperty(Anomaly p) { return properties.contains(p); }
+    public void addProperty(Anomaly p) { properties.add(p); }
+    public void removeProperty(Anomaly p) { properties.remove(p); }
+    public Set<Anomaly> getProperties() { return properties; }
+    public Direction getDirection() { return direction;}
+    public void setDirection(Direction dir) { this.direction = dir != null ? dir : Direction.NONE; }
+    public void clearProperties() { properties.removeIf(Anomaly::isTransferable); }
 
     public void update(Level level) {}
 

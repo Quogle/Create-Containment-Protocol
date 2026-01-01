@@ -12,7 +12,7 @@ public class Box extends Entity {
 
     Tile previousTile;
     public Box(int x, int y, EntityType entityType, Level level) {
-        super(x, y, entityType, createAnimationManager());
+        super(x, y, entityType, createAnimationManager(level));
         this.previousTile = level.getTile(getX(), getY());
     }
 
@@ -21,9 +21,9 @@ public class Box extends Entity {
         return EntityType.BOX;
     }
 
-    private static AnimationManager createAnimationManager() {
-        AnimationManager manager = new AnimationManager();
-        manager.add("DEFAULT", new ResourceLocation[]{Assets.BOX}, 1, false);
+    private static AnimationManager createAnimationManager(Level level) {
+        AnimationManager manager = new AnimationManager(level);
+        manager.addIdle("DEFAULT", new ResourceLocation[]{Assets.BOX},false);
         return manager;
     }
 

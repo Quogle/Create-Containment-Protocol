@@ -44,8 +44,8 @@ public class AnimationAssets {
     };
 
     public static final int[] PUSH_DURATIONS = new int[] {
-            20,
-            60
+            5,
+            10
     };
 
     //ENEMIES
@@ -81,11 +81,11 @@ public class AnimationAssets {
     };
 
     public static final int[] BUMP_DURATIONS = new int[] {
+            2,
+            2,
             10,
-            10,
-            50,
-            10,
-            10
+            2,
+            2
     };
 
     //MISC

@@ -8,7 +8,8 @@ public enum TileType implements Rotatable {
     CRACKED(Assets.CRACKED,false, false),
     WALL(Assets.WALL,true, false),
     VOID(Assets.VOID,false, false),
-    EXIT(Assets.EXIT,false, false),
+    EXIT(Assets.EXIT_ACTIVE,false, false),
+    BUTTON(Assets.BUTTON,false, false),
     IMPRINT(Assets.IMPRINT,false, false),
     ARROW(Assets.ARROW_RIGHT1,false, true),
     HP(Assets.HP,false, false),
@@ -48,6 +49,7 @@ public enum TileType implements Rotatable {
         // For rotatable tiles like ARROW, you could return different textures based on direction
         if (this == ARROW) {
             return switch (dir) {
+                case NONE -> null;
                 case UP -> Assets.ARROW_UP1;
                 case DOWN -> Assets.ARROW_DOWN1;
                 case LEFT -> Assets.ARROW_LEFT1;

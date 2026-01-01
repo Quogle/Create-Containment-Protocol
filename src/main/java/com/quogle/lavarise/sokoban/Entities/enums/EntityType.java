@@ -41,6 +41,7 @@ public enum EntityType implements Rotatable {
         // For rotatable tiles like ARROW, you could return different textures based on direction
         if (this == SNAIL) {
             return switch (dir) {
+                case NONE -> null;
                 case UP -> Assets.SNAIL_UP;
                 case DOWN -> Assets.SNAIL_DOWN;
                 case LEFT -> Assets.SNAIL_LEFT;

@@ -2,7 +2,7 @@ package com.quogle.lavarise.sokoban;
 
 import net.minecraft.resources.ResourceLocation;
 
-public enum Property {
+public enum Anomaly {
     SELECTABLE(null),
     ICE(Assets.ICE_PREV),       // preview texture for editor
     FIRE(Assets.FIRE_PREV),
@@ -12,7 +12,7 @@ public enum Property {
 
     private final ResourceLocation previewTexture;
 
-    Property(ResourceLocation previewTexture) {
+    Anomaly(ResourceLocation previewTexture) {
         this.previewTexture = previewTexture;
     }
 

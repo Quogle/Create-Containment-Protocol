@@ -8,14 +8,24 @@ import com.quogle.lavarise.sokoban.TileType;
 import net.minecraft.resources.ResourceLocation;
 
 public class ExitTile extends Tile {
-    SokobanScreen sokobanScreen;
+
+    private boolean active = false;
 
     public ExitTile(int x, int y, Level level) {
         super(x, y, level);
         this.setType(TileType.EXIT);
     }
 
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
     public ResourceLocation getSprite() {
-        return Assets.EXIT;
+        return active ? Assets.EXIT_ACTIVE : Assets.EXIT_INACTIVE;
     }
 }
+

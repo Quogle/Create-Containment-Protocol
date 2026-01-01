@@ -27,7 +27,7 @@ public class Mole extends Entity {
     }
 
     private void initAnimations() {
-        getAnimationManager().add("idle", AnimationAssets.MOLE_IDLE, 40, true);
+        getAnimationManager().addIdle("idle", AnimationAssets.MOLE_IDLE, true);
         getAnimationManager().add("block", AnimationAssets.MOLE_BLOCK, AnimationAssets.BUMP_DURATIONS, false);
     }
 

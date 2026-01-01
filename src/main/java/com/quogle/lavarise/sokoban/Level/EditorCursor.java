@@ -6,7 +6,9 @@ import com.quogle.lavarise.sokoban.*;
 import com.quogle.lavarise.sokoban.Entities.*;
 import com.quogle.lavarise.sokoban.Entities.enums.EntityType;
 import com.quogle.lavarise.sokoban.Tiles.ArrowTile;
+import com.quogle.lavarise.sokoban.Tiles.ButtonTile;
 import com.quogle.lavarise.sokoban.Tiles.ExitTile;
+import com.quogle.lavarise.sokoban.Tiles.FloorNumTile;
 
 public class EditorCursor extends Entity {
 
@@ -14,7 +16,7 @@ public class EditorCursor extends Entity {
     private final Level level;
 
     public EditorCursor(Level level, EditorController editorController, EntityType entityType) {
-        super(0, 0, entityType, new NoAnimationManager());
+        super(0, 0, entityType, new NoAnimationManager(level));
         this.level = level;
         this.editorController = editorController;
     }
@@ -51,7 +53,16 @@ public class EditorCursor extends Entity {
         else if (type == TileType.EXIT) {
             // Default direction
             tileToPlace = new ExitTile(x, y, level);
-        } else {
+        }
+        else if (type == TileType.BUTTON) {
+            // Default direction
+            tileToPlace = new ButtonTile(x, y, level);
+        }
+        else if (type == TileType.NUMBER) {
+            // Default direction
+            tileToPlace = new FloorNumTile(x, y, level);
+        }
+        else {
             tileToPlace = new Tile(x, y, level);
             tileToPlace.setType(type);
         }
@@ -62,7 +73,7 @@ public class EditorCursor extends Entity {
 
 
     /** Apply a property to the current tile */
-    public void addProperty(Property prop) {
+    public void addProperty(Anomaly prop) {
         Tile t = level.getTile(getX(), getY());
         Entity e = t.getEntity();
         if (e != null) {
@@ -87,7 +98,7 @@ public class EditorCursor extends Entity {
     }
 
     /** Remove a property from the current tile */
-    public void removePropertyFromTile(Property prop) {
+    public void removePropertyFromTile(Anomaly prop) {
         Tile t = level.getTile(getX(), getY());
         if (t != null) t.removeProperty(prop);
     }
@@ -97,11 +108,11 @@ public class EditorCursor extends Entity {
         if (tile == null) return;
 
         Entity e = switch (type) {
-            case PLAYER -> new Player(getX(), getY(), new AnimationManager(), type, level);
+            case PLAYER -> new Player(getX(), getY(), new AnimationManager(level), type, level);
             case BOX -> new Box(getX(), getY(), type, level);
-            case SNAIL -> new Snail(getX(), getY(), dir, new AnimationManager(), type, level);
-            case MOLE -> new Mole(getX(), getY(), new AnimationManager(), type, level);
-            case CURSOR -> new Cursor(new AnimationManager(), type, level);
+            case SNAIL -> new Snail(getX(), getY(), dir, new AnimationManager(level), type, level);
+            case MOLE -> new Mole(getX(), getY(), new AnimationManager(level), type, level);
+            case CURSOR -> new Cursor(new AnimationManager(level), type, level);
             default -> null;
         };
 
@@ -112,19 +123,10 @@ public class EditorCursor extends Entity {
     }
 
     public void clearEntities() {
-        Tile t = level.getTile(getX(), getY());
-        if (t != null) t.setEntity(null);
+        level.removeEntitiesAt(getX(), getY());
     }
 
     public Tile getTileUnderCursor() {
         return level.getTile(getX(), getY());
-    }
-    public Entity getEntityUnderCursor() {
-        return level.getEntity(getX(), getY());
-    }
-
-    public void removeEntity() {
-        Tile t = level.getTile(getX(), getY());
-        if (t != null) t.setEntity(null);
     }
 }

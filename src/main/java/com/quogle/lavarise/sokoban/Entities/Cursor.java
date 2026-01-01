@@ -28,7 +28,7 @@ public class Cursor extends Entity {
     // Update list of tiles with the SELECTABLE property
     public void refreshSelectableTiles() {
         List<Tile> oldSelectable = selectableTiles;
-        selectableTiles = level.getTilesWithProperty(Property.SELECTABLE);
+        selectableTiles = level.getTilesWithProperty(Anomaly.SELECTABLE);
 
         if (selectableTiles.isEmpty()) return;
 
@@ -65,13 +65,13 @@ public class Cursor extends Entity {
         if (selectableTiles.isEmpty()) return null;
         return selectableTiles.get(index);
     }
-    public Set<Property> getProperties() {
+    public Set<Anomaly> getProperties() {
         Tile selected = getSelectedTile();
         return selected != null ? selected.getProperties() : Collections.emptySet();
     }
 
     private void initAnimations() {
 
-        getAnimationManager().add("DEFAULT", AnimationAssets.CURSOR, 40, true);
+        getAnimationManager().addIdle("DEFAULT", AnimationAssets.CURSOR,  true);
     }
 }

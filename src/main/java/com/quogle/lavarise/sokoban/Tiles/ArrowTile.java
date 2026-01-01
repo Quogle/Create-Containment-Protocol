@@ -34,6 +34,7 @@ public class ArrowTile extends Tile implements Rotatable {
     @Override
     public void rotateClockwise() {
         direction = switch (direction) {
+            case NONE -> null;
             case UP -> Direction.RIGHT;
             case RIGHT -> Direction.DOWN;
             case DOWN -> Direction.LEFT;
@@ -45,6 +46,7 @@ public class ArrowTile extends Tile implements Rotatable {
     @Override
     public ResourceLocation getPreview(Direction dir) {
         return switch (dir) {
+            case NONE -> null;
             case UP -> Assets.ARROW_UP1;
             case DOWN -> Assets.ARROW_DOWN1;
             case LEFT -> Assets.ARROW_LEFT1;
@@ -54,6 +56,7 @@ public class ArrowTile extends Tile implements Rotatable {
 
     private void updateFrames() {
         frames = switch (direction) {
+            case NONE -> null;
             case RIGHT -> new ResourceLocation[]{ Assets.ARROW_RIGHT1, Assets.ARROW_RIGHT2 };
             case LEFT  -> new ResourceLocation[]{ Assets.ARROW_LEFT1,  Assets.ARROW_LEFT2  };
             case UP    -> new ResourceLocation[]{ Assets.ARROW_UP1,    Assets.ARROW_UP2    };
@@ -61,9 +64,9 @@ public class ArrowTile extends Tile implements Rotatable {
         };
     }
 
-    public List<Property> collectTransferableProperties() {
-        List<Property> result = new ArrayList<>();
-        for (Property p : this.getProperties()) {
+    public List<Anomaly> collectTransferableProperties() {
+        List<Anomaly> result = new ArrayList<>();
+        for (Anomaly p : this.getProperties()) {
             if (p.isTransferable())
                 result.add(p);
         }
